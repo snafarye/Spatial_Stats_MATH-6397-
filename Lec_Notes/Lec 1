@@ -1,19 +1,34 @@
-Download “data-lecture1.RData” from TEAMS. The data
-set consists of x, y, and two more variables A and B at
-each spatial location. Using R and software fields, do the
-following:
+#Download “data-lecture1.RData” from TEAMS. The data
+#set consists of x, y, and two more variables A and B at
+#each spatial location. Using R and software fields, do the
+#following:
+#  1. Draw a scatter plot of A (x-axis)and B (y-axis).
+#2. Perform linear regression on B using A. Summarize your
+#results of the regression and discuss the relationship
+#between the two variables A and B.
+#3. Plot a ”map” of B (use ”quilt.plot” command in R
+#                      package fields)
+#4. Repeat 1 for the residuals from the regression in 2.
+#Discuss similarities or differences betwen the two
+#spatial maps of B and the residuals.
 
-1. Draw a scatter plot of A (x-axis)and B (y-axis).
+A = sample(x = c(1:10), size = 100, replace = TRUE)
+B = sample(x = c(1:20), size = 100, replace = TRUE)
 
-2. Perform linear regression on B using A. Summarize your
-results of the regression and discuss the relationship
-between the two variables A and B.
+Data = data.frame(A,B)
 
-3. Plot a ”map” of B (use ”quilt.plot” command in R
-package fields)
+# part 1
+pairs(Data)
 
-4. Repeat 1 for the residuals from the regression in 2.
-Discuss similarities or differences betwen the two
-spatial maps of B and the residuals.
+# part 2 
+data.lm = lm(B~A, data = Data)
+summary(data.lm)
 
+# part 3
+
+data.quilt.plot = quilt.plot(x,y,z,
+                             nrow = 64, 
+                             ncol = 64, 
+                             grid = NULL,
+                             add.legend=TRUE,...) 
 
