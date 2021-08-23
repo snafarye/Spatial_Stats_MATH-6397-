@@ -1,3 +1,19 @@
+Download “data-lecture1.RData” from TEAMS. The data
+set consists of x, y, and two more variables A and B at
+each spatial location. Using R and software fields, do the
+following:
 
+1. Draw a scatter plot of A (x-axis)and B (y-axis).
+
+2. Perform linear regression on B using A. Summarize your
+results of the regression and discuss the relationship
+between the two variables A and B.
+
+3. Plot a ”map” of B (use ”quilt.plot” command in R
+package fields)
+
+4. Repeat 1 for the residuals from the regression in 2.
+Discuss similarities or differences betwen the two
+spatial maps of B and the residuals.
 
 
