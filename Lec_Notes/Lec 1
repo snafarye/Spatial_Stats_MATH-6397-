@@ -12,23 +12,65 @@
 #Discuss similarities or differences betwen the two
 #spatial maps of B and the residuals.
 
-A = sample(x = c(1:10), size = 100, replace = TRUE)
-B = sample(x = c(1:20), size = 100, replace = TRUE)
+#A = sample(x = c(1:10), size = 100, replace = TRUE)
+#B = sample(x = c(1:20), size = 100, replace = TRUE)
+A
+B
+x
+y
+
 
 Data = data.frame(A,B)
 
 # part 1
-pairs(Data)
+#pairs(Data)
+plot(A,B, main = "Scatter plot of A and B")
 
 # part 2 
 data.lm = lm(B~A, data = Data)
 summary(data.lm)
 
-# part 3
+# y = 0.35565Bo +0.82634B1 +ei
 
-data.quilt.plot = quilt.plot(x,y,z,
-                             nrow = 64, 
-                             ncol = 64, 
-                             grid = NULL,
-                             add.legend=TRUE,...) 
+# part 3
+plot(x,y)
+install.packages("fields")
+library(fields)
+?quilt.plot
+# spaial map of B
+data.quilt.plot = quilt.plot(x,y, B) # can also look into A
+
+
+
+# part 4  map of the residual
+plot(A,B)
+data.lm$residuals
+
+quilt.plot(x,y, data.lm$residuals)
+# want to take a look at the residual 
+
+
+par(mfrow=c(1,2))
+data.quilt.plot = quilt.plot(x,y, B)
+quilt.plot(x,y, data.lm$residuals)
+par(mfrow=c(1,1))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
