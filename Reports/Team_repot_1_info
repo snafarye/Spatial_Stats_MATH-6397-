@@ -1,0 +1,21 @@
+
+Using the data assigned to your team (you will get zero if your team uses a wrong data set), 
+and using the 1500 randomly sampled locations only, do the following. 
+(Note: before you sample 1500 locations, remember to get rid of rows with any NAs.)
+
+1.	Draw a spatial map (using quilt.plot command in fields) of median_house_value. 
+Discuss what you observe in its spatial pattern.
+
+2.	Perform a linear regression (nothing spatial! Use lm command in R) 
+on median_house_value using the following covariates: longitude, latitude, housing_median_age, total_bedrooms, median_income
+Discuss results of linear regression.
+
+3.	Draw a spatial map of the residuals from part 2. Compare the two spatial maps 
+(map of residuals with the map of original values from part 1) 
+regarding their spatial variation and patterns (similar to an example given in class last week).
+
+4.	Compare histogram of original values of median_house_value to the histogram of residuals from part 2. Discuss how the two histograms compare.
+
+Submit a pdf file of the report (with a cover page including team number, team member names, who did what). 
+Max 4 pages including cover page, figures and tables. 
+Email the report by september 6 5 PM houston time at statistics.uh@gmail.com.
