@@ -1,1 +1,35 @@
+load("C:/Users/Samue/Desktop/books for school/FALL 2021/MATH 6397/data1.RData")
+general_data = data1 #Create a dataframe with the loaded dataset
+nrow(general_data) #Check the number of rows of the dataset
+new_data <- na.omit(general_data) #create a new dataset without missing values
+nrow(new_data) #check number of rows of new dataset without missing values
+sum(is.na(new_data)) #check to see if all missing values have been removed
+sample_data = new_data[sample(nrow(new_data), 1500, F), ] #create a sample dataset of 1500 rows
+nrow(sample_data)#check to see if sample dataset has 1500 rows
+library("xlsx") #Library used to covert dataset to excel file
+write.xlsx(sample_data, file = "Team1_SampleData.xlsx")
 
+
+
+
+library(readxl)
+df <- read_excel("Team1_SampleData.xlsx")
+colnames(df)
+install.packages("fields")
+library(fields)
+?quilt.plot
+
+
+# part 1
+y = df$longitude
+x = df$latitude
+A = df$median_house_value 
+data.quilt.plot = quilt.plot(x,y,A) 
+##another way to write it
+attach(df)
+dqp = quilt.plot(latitude, longitude, median_house_value) 
+detach(df)
+
+# part 2
+fit = lm(median_house_value~longitude+latitude+ housing_median_age+ total_bedrooms+ median_income, data = df)
+summary(fit)
