@@ -39,3 +39,21 @@ detach(df)
 # part 2
 fit = lm(median_house_value~longitude+latitude+ housing_median_age+ total_bedrooms+ median_income, data = df)
 summary(fit)
+
+# part 3
+quilt.plot(latitude, longitude,  fit$residuals)
+
+par(mfrow=c(1,2))
+data.quilt.plot = quilt.plot(latitude, longitude, median_house_value)
+quilt.plot(latitude, longitude, fit$residuals)
+par(mfrow=c(1,1))
+
+
+
+# part 4
+par(mfrow=c(1,2))
+hist(median_house_value, main = 'Original Values')
+hist(fit$residuals, main = 'Residual Values')
+par(mfrow=c(1,1))
+
+detach(df)
