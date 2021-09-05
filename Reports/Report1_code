@@ -27,25 +27,26 @@ library(fields)
 
 
 # part 1
-y = df$longitude
-x = df$latitude
-A = df$median_house_value 
-data.quilt.plot = quilt.plot(x,y,A) 
+#y = df$longitude
+#x = df$latitude
+#A = df$median_house_value 
+#data.quilt.plot = quilt.plot(x,y,A) 
 ##another way to write it
+
 attach(df)
-dqp = quilt.plot(latitude, longitude, median_house_value) 
-detach(df)
+dqp = quilt.plot(longitude, latitude, median_house_value) 
+
 
 # part 2
 fit = lm(median_house_value~longitude+latitude+ housing_median_age+ total_bedrooms+ median_income, data = df)
 summary(fit)
 
 # part 3
-quilt.plot(latitude, longitude,  fit$residuals)
+quilt.plot(longitude, latitude,  fit$residuals)
 
 par(mfrow=c(1,2))
-data.quilt.plot = quilt.plot(latitude, longitude, median_house_value)
-quilt.plot(latitude, longitude, fit$residuals)
+data.quilt.plot = quilt.plot(longitude, latitude, median_house_value)
+quilt.plot(longitude, latitude, fit$residuals)
 par(mfrow=c(1,1))
 
 
@@ -57,3 +58,4 @@ hist(fit$residuals, main = 'Residual Values')
 par(mfrow=c(1,1))
 
 detach(df)
+
