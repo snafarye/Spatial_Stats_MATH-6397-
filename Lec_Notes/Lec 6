@@ -1,0 +1,49 @@
+set.seed(0920) 
+library(fields) 
+
+?Matern
+
+x=runif(100,0,1) 
+y=runif(100,0,1) 
+
+# calc the distance matrix
+D=rdist(cbind(x,y))  # distance already takes into account 
+dim(D)
+D[1:5,1:5]
+
+
+## exponential with alpha=2, beta=0.2 
+S1=2*exp(-D/0.2) 
+dim(S1) #covariance matrix
+round (S1[1:5,1:5],2)
+
+
+## add a nugget delta=0.001 
+diag(S1)= diag(S1)+0.001 
+
+
+## matern with alpha=1, beta=0.1, nu=1.5 
+S2=Matern(D, smoothness=1.5, range=0.1) 
+lat=runif(100,-40,40) 
+lon=runif(100,-80,80) 
+D=rdist.earth(cbind(lon,lat), miles=F) # when data is given in log, lat use rdist.eath()
+D[1:5,1:5]
+range(D)
+
+
+# ...
+
+
+
+## adding nugget
+
+
+
+
+
+
+
+
+
+
+
