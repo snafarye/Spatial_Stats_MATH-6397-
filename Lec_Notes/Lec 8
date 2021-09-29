@@ -1,4 +1,5 @@
  
+load("C:/Users/nsara/Documents/Grad_School/MATH 6397/lec8.RData")
 set.seed(100) 
  x=runif(25,0,1) 
 y=runif(25,0,1) 
