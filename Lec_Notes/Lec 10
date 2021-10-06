@@ -1,10 +1,8 @@
 library("fields") 
 load("lec10-ex.RData") 
- 
 
 vg1.1=vgram(cbind(x,y), z1) 
 
-  
 plot(vg1.1) 
 
 vg1.2=vgram(cbind(x,y), z1, dmax=0.6) 
@@ -12,117 +10,60 @@ vg1.2=vgram(cbind(x,y), z1, dmax=0.6)
 plot(vg1.2) 
 
 reg1=lm(z1~1) 
- 
 
 res1=z1-mean(z1) 
 
-  
-
 vg1.1.r=vgram(cbind(x,y),res1) 
-
-  
 
 plot(vg1.1.r) 
 
-  
-
 vg1.2.r=vgram(cbind(x,y), res1, dmax=0.6) 
-
-  
 
 plot(vg1.2.r) 
 
-  
-
-  
-
 vg2.1=vgram(cbind(x,y), z2) 
-
-  
 
 plot(vg2.1) 
 
-  
-
 vg2.2=vgram(cbind(x,y), z2, dmax=0.6) 
-
-  
 
 plot(vg2.2) 
 
-  
-
 y2=y^2 
-
-  
 
 reg2=lm(z2~1+x+y) 
 
-  
-
 res2=reg2$residuals 
-
-  
 
 vg2.1.r=vgram(cbind(x,y),res2) 
 
-  
-
-plot(vg2.1.r) 
-
-  
+plot(vg2.1.r)  
 
 vg2.2.r=vgram(cbind(x,y), res2, dmax=0.6) 
 
-  
-
 plot(vg2.2.r) 
-
-  
-
-  
-
-  
 
 library("gstat") 
 
 library("sp") 
 
-  
-
 data=data.frame(cbind(x,y,z1,z2)) 
 
 names(data)=c("x","y","z1","z2") 
 
-  
-
 coordinates(data)=~x+y 
-
-  
 
 bubble(data, zcol="z1", fill=TRUE, do.sqrt=FALSE) 
 
-  
-
 bubble(data, zcol="z2", fill=TRUE, do.sqrt=FALSE) 
-
-  
 
 vg1.3=variogram(z1~1,data=data) 
 
-  
-
 plot(vg1.3) 
-
-  
 
 vg2.3=variogram(z2~x+y, data=data) 
 
-  
-
 plot(vg2.3) 
-
-  
 
 ##"Exp" (for exponential) 
 
@@ -132,42 +73,21 @@ plot(vg2.3)
 
 ##"Mat" (for Matern) 
 
-  
-
 model1=vgm(psill=1, model="Gau", nugget=0.001, range=0.2) 
-
-  
 
 plot(vg1.3,model=model1) 
 
-  
-
 fit1=fit.variogram(vg1.3, model=model1) 
-
-  
-
+ 
 plot(vg1.3, model=fit1) 
 
-  
+vg1.4=variogram(z~1, data=data, cutoff=0.8, width=0.8/20)  
 
-vg1.4=variogram(z~1, data=data, cutoff=0.8, width=0.8/20) 
+plot(vg1.4)  
 
-  
-
-plot(vg1.4) 
-
-  
-
-fit2=fit.variogram(vg1.4, model=model1) 
-
-  
+fit2=fit.variogram(vg1.4, model=model1)  
 
 plot(vg1.4, model=fit2) 
-
-  
-
-  
-
   
 
 ##https://gsp.humboldt.edu/olm/R/04_01_Variograms.html 
