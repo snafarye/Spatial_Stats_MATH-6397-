@@ -1,0 +1,63 @@
+##  lec 11
+
+install.packages('geoR')
+library(geoR)
+
+
+#--- z1(uknonw constant mean and cov 
+
+# want a exp w/nuggest
+fit1 = likfit(coords=cbind(x,y), data  = z1, 
+              fix.nugget = TRUE, nugget = 0,
+              fix.kappa = TRUE, kappa = 0.5,
+              ini.cov.pars = c(1,0.3))
+fit1
+#phi = spacial range, sigmasq = alpha, tausq = nugget 
+# cov.model at defate matern
+
+
+
+# want a exp w nuggest
+fit2 = likfit(coords=cbind(x,y), data  = z1, 
+              fix.nugget = FALSE,
+              fix.kappa = TRUE, kappa = 0.5,
+              ini.cov.pars = c(1,0.3))
+fit2  # get a higher value thtan fit1, and thats wht you wanttherefor its better
+      # dif, cov matrix changes, the pdf is the same tho
+    # but cant just say the second one is better, aic, 
+# need to have same distributon, Mulitval distributon, 
+# but comaricon not valid fit1 and fit2 have diff paramersts
+# we should look at AIC insead of just the log-likelihood
+
+# want estimate smoothness
+fit3 = likfit(coords=cbind(x,y), data  = z1, 
+              fix.nugget = FALSE,
+              fix.kappa = FALSE,
+              ini.cov.pars = c(1,0.3))
+fit3
+
+
+fit4 = likfit(coords=cbind(x,y), data  = z1, 
+              fix.nugget = FALSE,
+              ini.cov.pars = c(1,0.3), cov.model = 'wave')
+fit4
+
+
+## z2 
+
+fit5 = likfit(coords=cbind(x,y), data  = z2, 
+              fix.nugget = FALSE,
+              fix.kappa = TRUE, trend = '1st',
+              ini.cov.pars = c(1,0.3))
+fit5
+
+## test w/ around 3000 locations, harder when have more
+
+
+fit6 = likfit(coords=cbind(x,y), data  = z2, 
+              fix.nugget = FALSE,
+              fix.kappa = TRUE, trend = '1st',lik.method = 'REML',
+              ini.cov.pars = c(1,0.3))
+fit6
+
+
