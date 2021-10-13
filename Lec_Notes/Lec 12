@@ -1,279 +1,128 @@
-A 
-
 set.seed(100) 
 
-  
-
 library("fields") 
-
 library("geoR") 
 
-  
-
 x=runif(200,0,1) 
-
 y=runif(200,0,1) 
 
-  
 
 D=rdist(cbind(x,y)) 
-
-  
-
 S=2*Matern(D/0.3, smoothness=1.5) 
-
 diag(S)=diag(S)+0.1 
-
-  
-
-  
-
 z=rnorm(200,0,1) 
-
-  
-
 z=t(chol(S)) %*% z 
-
-  
-
-  
-
 z1=z-2*y^2 
-
-  
-
 quilt.plot(x,y,z1, main="plot of z1") 
 
-  
 
-  
-
-fit1=likfit(coords=cbind(x,y), data=z1, trend="1st", fix.kappa=FALSE, ini.cov.pars=c(2,0.1)) 
-
-  
-
-fit2=likfit(coords=cbind(x,y), data=z1, trend="1st", fix.kappa=FALSE, lik.method="REML", ini.cov.pars=c(2,0.1)) 
-
-  
-
+# geoR , not fitting kappa, estimating smoothness 
+fit1=likfit(coords=cbind(x,y), data=z1, trend="1st", 
+            fix.kappa=FALSE, ini.cov.pars=c(2,0.1)) 
 summary(fit1) 
+# reml estimates are larger , mle is biases, smaller than should be, 
+# can compare them to kriging accurcay 
+fit2=likfit(coords=cbind(x,y), data=z1, trend="1st", 
+            fix.kappa=FALSE, lik.method="REML", 
+            ini.cov.pars=c(2,0.1)) 
 
-  
+fit3=likfit(coords=cbind(x,y), data=z1, trend="1st", 
+            fix.kappa=TRUE,kappa=1.5, lik.method="REML",
+            ini.cov.pars=c(2,0.1)) 
 
-fit3=likfit(coords=cbind(x,y), data=z1, trend="1st", fix.kappa=TRUE,kappa=1.5, lik.method="REML", ini.cov.pars=c(2,0.1)) 
+fit3.1=likfit(coords=cbind(x,y), data=z1, trend="1st", 
+            fix.kappa=TRUE,kappa=1.5, lik.method="ML",
+            ini.cov.pars=c(2,0.1)) 
+# better to use REML than MLe
+fit3
+fit3.1
 
-  
 
+# calc emperial variogram
 vg=variog(coords=cbind(x,y), data=z1, trend="1st") 
-
-  
-
 plot(vg,ylim=c(0,2)) 
 
-  
-
 lines(fit1) 
-
 lines(fit2, col=2) 
-
 lines(fit3, col=3) 
 
-  
-
+# get the fit (like in likfit in the geor package, but can set the max distace)
 fit4=variofit(vg, fix.kappa=FALSE,ini.cov.pars=c(2,0.5)) 
-
 lines(fit4, col=4) 
 
-  
-
 fit5=variofit(vg, fix.kappa=FALSE,ini.cov.pars=c(2,0.5), wei="equal") 
-
 lines(fit5, col=5) 
-
-  
+# least square can be unstable 
 
 vg1=variog(coords=cbind(x,y), data=z1) 
 
-  
+
 
 fit6=variofit(vg1, fix.kappa=FALSE,ini.cov.pars=c(2,0.5)) 
-
-  
-
 plot(vg1) 
-
-  
-
 lines(fit6, col=5) 
 
-  
+
 
 ## comparison with gstat 
-
-  
-
 library("gstat") 
-
 library("sp") 
 
-  
-
 data1=data.frame(cbind(x,y,z1)) 
-
 names(data1)=c("x","y","z1") 
-
-  
-
 coordinates(data1)= ~x+y 
-
-  
-
 model1=vgm(psill=1, model="Mat", nugget=0.001, range=0.2) 
 
-  
-
 vg2=variogram(z1~x+y,data=data1) 
-
-  
-
-  
-
 fit7=fit.variogram(vg2, model=model1,fit.kappa=TRUE) 
-
-  
-
 plot(vg2, model=fit7) 
-
-  
-
-  
-
 vg3=variog(coords=cbind(x,y), data=z1,trend="1st") 
-
-  
-
-  
 
 fit8=variofit(vg3, fix.kappa=FALSE,ini.cov.pars=c(2,0.5),weights="equal") ## cutoff, binwidth, weight, etc 
 
-  
-
-  
-
-  
-
-  
-
-  
-
 ### 
-
-  
-
-  
 
 set.seed(100) 
 
-  
-
 lon=runif(300,-100,100) 
-
 lat=runif(300,-40,40) 
-
-  
-
-  
-
 D=rdist.earth(cbind(lon,lat)) 
-
-  
-
 S=2*Matern(D/500, smoothness=1) 
-
 diag(S)=diag(S)+0.1 
-
-  
-
-  
-
 z=rnorm(300,0,1) 
-
-  
-
 z=t(chol(S)) %*% z 
-
-  
-
-  
-
 z2=z+2 
 
-  
-
 quilt.plot(lon,lat,z2,main="plot of z2") 
-
 world(add=T) 
-
-  
-
-  
-
 data2=data.frame(cbind(lon,lat,z2)) 
-
 names(data2)=c("lon","lat","z2") 
-
-  
-
+# euquildian distance 
 coordinates(data2)= ~lon+lat 
-
-  
-
 model2=vgm(psill=1, model="Mat", nugget=0.001, range=500) 
 
-  
 
 vg4=variogram(z2~1,data=data2) 
-
-  
-
 plot(vg4) 
 
-  
 
 fit9=fit.variogram(vg4, model=model2,fit.kappa=TRUE) 
-
-  
-
-vg5=variogram(z2~1,data=data2,projected=FALSE ) 
-
-  
+vg5=variogram(z2~1,data=data2,projected=FALSE ) # geonedic deistance
 
 proj4string(data2) = "+proj=longlat +datum=WGS84" 
-
-  
-
 vg5=variogram(z2~1,data=data2 ) 
 
-  
+
 
 fit10=fit.variogram(vg5, model=model2,fit.kappa=TRUE) ## imporance of initial value for range 
+plot(vg5, model=fit10) # range in KM, not dgrees
 
-  
+# in fieds package
+fit11=Krig(x=matrix(cbind(lon,lat),ncol=2),Y=z2, 
+           method="REML", Distance="rdist.earth" , # rdist(eniqlian dist) or rdist.earth
+           Covariance="Matern", smoothness=1.5) 
 
-plot(vg5, model=fit10) 
 
-  
-
-  
-
-fit11=Krig(x=matrix(cbind(lon,lat),ncol=2),Y=z2, method="REML", Distance="rdist.earth" ,Covariance="Matern", smoothness=1.5) 
-
-  
 
 ##https://github.com/NCAR/fields/blob/master/fieldsVignette.pdf 
-
-  
-
 ##https://reseau-resste.mathnum.inrae.fr//sites/default/files/2020-09/analyzing-spatio-temporal.pdf 
-
- 
