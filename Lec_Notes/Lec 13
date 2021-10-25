@@ -1,0 +1,88 @@
+## Oct 25, 2021 
+
+# We will use Texas Airbnb data we used before for the exercise (see under “Data”) 
+# Sample code that we will use as a basis is under “R code” 
+# We will first explore appropriate spatial regression model 
+# Then we will consider a few covariance models 
+# We will use least squares method and likelihood based method to fit mean and covariance parameters 
+# We will then perform Kriging on locations that we set aside 
+# In the end, we can perform model comparison in terms of model fit as well as Kriging 
+# We can also create Kriged map with associated uncertainty map 
+
+
+
+
+airbnb=Airbnb_Texas_Rentals 
+airbnb=airbnb[!is.na(airbnb$longitude) & !is.na(airbnb$latitude),] 
+
+log_price=log(airbnb$average_rate_per_night) 
+
+data=airbnb[airbnb$Year==2017,] 
+data=data[!is.na(data$bedrooms_count),] 
+
+library("fields") 
+index1=sample(1:dim(data)[1], 500) 
+ 
+
+index2=sample(setdiff(1:dim(data)[1],index1), 100) 
+
+data1=data[index1,] 
+data2=data[index2,] 
+
+  
+plot(data1$Month, log(data1$average_rate_per_night)) 
+plot(data1$bedrooms_count, log(data1$average_rate_per_night))  
+plot(data1$longitude, log(data1$average_rate_per_night)) 
+plot(data1$latitude, log(data1$average_rate_per_night)) 
+
+library("geoR") 
+
+## variogram  
+vario1=variog(coords=cbind(data1$longitude, data1$latitude), data=log(data1$average_rate_per_night)) 
+plot(vario1) 
+vario2=variog(coords=cbind(data1$longitude, data1$latitude), data=log(data1$average_rate_per_night), 
+
+              trend=trend.spatial(~data1$bedrooms_count), max.dist=6) 
+plot(vario2) 
+
+## least squares 
+fit1=variofit(vario2, ini.cov.pars=c(1,1)) ## try many other models 
+## likelihood method 
+
+fit2=likfit(coords=cbind(data1$longitude, data1$latitude), data=log(data1$average_rate_per_night), 
+            trend=trend.spatial(~data1$bedrooms_count),ini.cov.pars=c(0.5,2),fix.nugget=TRUE,nugget=0.1)  
+
+fit3=likfit(coords=cbind(data1$longitude, data1$latitude), data=log(data1$average_rate_per_night), 
+            trend=trend.spatial(~data1$bedrooms_count),cov.model="spherical", ini.cov.pars=c(0.5,2),fix.nugget=TRUE,nugget=0.1) 
+
+  
+
+## Kriging 
+# modify code below  
+M=cbind(rep(1,20), x[1:20]) 
+m=t(cbind(rep(1,5), x[21:25])) 
+lambda3=(solve(S) - solve(S) %*% M %*% solve(t(M) %*% solve(S) %*% M) %*% t(M) %*% solve(S) ) %*% k + solve(S) %*% M %*% solve(t(M) %*% solve(S) %*% M) %*% m 
+z.krig3.1=t(lambda3) %*% z[1:20] 
+g= m-t(M) %*% solve(S) %*% k 
+mse3=k0-t(k) %*% solve(S) %*% k + t(g) %*% solve(t(M) %*% solve(S) %*% M) %*% g 
+mse3=diag(mse3) 
+## Krigged map with fields package 
+
+fit=Krig(cbind(data1$longitude, data1$latitude), log(data1$average_rate_per_night),m=1, Z=data1$bedrooms_count) 
+surface(fit) 
+out.p1=predict(fit, cbind(data2$longitude, data2$latitude),Z=data2$bedrooms_count) 
+out.p2=predictSE(fit, cbind(data2$longitude, data2$latitude),Z=data2$bedrooms_count) 
+quilt.plot(cbind(data2$longitude, data2$latitude), out.p1) 
+quilt.plot(cbind(data2$longitude, data2$latitude), out.p2) 
+
+data.all=data[setdiff(1:dim(data)[1], index1),] 
+out.p3=predict(fit, cbind(data.all$longitude, data.all$latitude),Z=data.all$bedrooms_count) 
+out.p4=predictSE(fit, cbind(data.all$longitude, data.all$latitude),Z=data.all$bedrooms_count) 
+quilt.plot(cbind(data.all$longitude, data.all$latitude), out.p3-log(data.all$average_rate_per_night)) 
+
+ 
+             
+
+  
+
+ 
