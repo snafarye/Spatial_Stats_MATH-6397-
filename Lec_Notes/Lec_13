@@ -150,4 +150,4 @@ quilt.plot(cbind(data.all$longitude, data.all$latitude), out.p3-log(data.all$ave
 
 
 
-
+https://login.microsoftonline.com/170bbabd-a2f0-4c90-ad4b-0e8f0f0c4259/oauth2/authorize?client_id=00000003-0000-0ff1-ce00-000000000000&response_mode=form_post&protectedtoken=true&response_type=code%20id_token&resource=00000003-0000-0ff1-ce00-000000000000&scope=openid&nonce=7C4AA9088486E38DAF3A7AB9076271117D450044A037DABC-F81E6C8730D2CA3221DFE5503D2B7BE054E29916FEB637FF913696131B58131D&redirect_uri=https%3A%2F%2Fuofh.sharepoint.com%2F_forms%2Fdefault.aspx&state=OD0w&claims=%7B%22id_token%22%3A%7B%22xms_cc%22%3A%7B%22values%22%3A%5B%22CP1%22%5D%7D%7D%7D&wsucxt=1&cobrandid=11bd8083-87e0-41b5-bb78-0bc43c8a8e8a&client-request-id=99f8fc9f-909e-c000-8bf5-b1241ec9a808&sso_reload=true
