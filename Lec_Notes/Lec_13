@@ -244,9 +244,10 @@ quilt.plot(cbind(data.all$longitude, data.all$latitude), out.p3-log(data.all$ave
 Library(sp) 
 
 ##### REML code example ##### 
+# gudicdist, distance matrix
 
 D=rdist.earth(cbind(data1$longitude, data1$latitude),miles=F) 
-m=2 
+m=2 # number of mean parameters 
 
 reml.loglik=function(par){ 
   print(par) 
@@ -255,15 +256,17 @@ reml.loglik=function(par){
   nu= exp(par[3])/(1+exp(par[3]))*5 
   delta=exp(par[4])   
   
-  M=cbind(rep(1, dim(D)[1]), data1$bedrooms_count)  ## 
-  Z=matrix(log(data1$average_rate_per_night),ncol=1)   
-  S=Matern(D/beta, smoothness=nu)*alpha
-  diag(S)=diag(S)+delta     
-  C=log(2*pi)*(-(dim(D)[1]-m)/2)    
+  M=cbind(rep(1, dim(D)[1]), data1$bedrooms_count)    ## design matrix 
+  Z=matrix(log(data1$average_rate_per_night),ncol=1)  # spatial data vector 
+  S=Matern(D/beta, smoothness=nu)*alpha               # matren cov matrix 
+  diag(S)=diag(S)+delta                               # nugget 
+
+  C=log(2*pi)*(-(dim(D)[1]-m)/2)                      # calc log reml likelihood
   Y=( diag(1, dim(D)[1],dim(D)[1])-  M %*% solve(t(M) %*% M) %*% t(M) ) %*% Z 
   
   t1=determinant(S, logarithm=T)$modulus 
   t2=determinant( t(M) %*% solve(S) %*% M, logarithm=T)$modulus 
+  
   t3=t(Y) %*% (solve(S) - solve(S) %*% M %*% solve(t(M) %*% solve(S) %*% M) %*% t(M) %*% solve(S) ) %*% Y 
   temp= -C - (t1+t2+t3)/2 
   print(temp) 
