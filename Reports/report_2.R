@@ -30,12 +30,16 @@ nrow(sample_kriging_data)
 hist(sample_data$median_house_value)
 hist(log(sample_data$median_house_value))
 
+
 qqnorm(sample_data$median_house_value)
 qqline(sample_data$median_house_value)
 
 qqnorm(log(sample_data$median_house_value))
 qqline(log(sample_data$median_house_value))
+
+hist(res0);qqnorm(res0);qqline(res0)
 # best to take the log of the median_house_value for better normality results
+# later see that using the residual as the predicting value is the best option ? 
 
 
 # variables to use for covariates variables ro help describe dependent variable ??
@@ -62,6 +66,17 @@ res0 = fit0$residuals
 plot(res0)
 quilt.plot(sample_data$longitude, sample_data$latitude, res0)
 
+hist(res0);qqnorm(res0);qqline(res0)
+
+par(mfrow=c(2,3))
+plot(sample_data$housing_median_age,      res0) # no clear linear/non-linear trend 
+plot(sample_data$total_bedrooms,          res0) # some what of a pos linear trend, but not strong  
+plot(sample_data$median_income,           res0) # much more significant , pos trend
+
+plot(sample_data$longitude,               res0) # not really see a sig. relationship b/t house_median_value
+plot(sample_data$latitude,                res0) # and long./ lat 
+par(mfrow=c(1,1))
+
 loc = cbind(sample_data$longitude, sample_data$latitude)
 
 plot(vgram(loc,log(sample_data$median_house_value)),lon.lat=TRUE) #Signs of spacial varying mean
@@ -72,137 +87,32 @@ plot(vgram(loc,res0),lon.lat=TRUE)  # use residual to get a better variogram plo
 plot(vgram(loc,res0, dmax = 0.5),lon.lat=TRUE)  # set a dmax for the plot
 
 # -----------  part 1-----------------------------------------------------------
-# Fill in the following table with estimates using the estimation method 
-# mentioned below. (p: the number of covariates.)
-
-loc = cbind(sample_data$longitude, sample_data$latitude)
-y <- log(sample_data$median_house_value) #value at loc
-x1  <- sample_data$total_bedrooms #x_total_bedrooms
-x2  <- sample_data$median_income  # x_median_income
-x3  <- sample_data$housing_median_age 
-x4  <- sample_data$longitude
-x5  <- sample_data$longitude
-
-
-# field
-plot(vgram(loc,y, lon.lat = FALSE))
-plot(vgram(loc,y, lon.lat = TRUE, dmax = 30))
-
-# geoR
-zz=rnorm(dim(sample_data)[1], 0,0.1) 
-sample_data$longitudee=sample_data$longitude+zz 
-fit = likfit(coords= cbind(sample_data$longitudee,sample_data$latitude),
-            data = log(sample_data$median_house_value), 
-            #trend=trend.spatial(~sample_data$total_bedrooms), # mean structure
-            lik.method = "ML",
-            ini.cov.pars=c(1,1)) 
-fit
-#likfit: estimated model parameters:
-#  beta     tausq   sigmasq       phi 
-#"12.4667" " 0.1436" " 0.1255" " 0.1713" 
-#Practical Range with cor=0.05 for asymptotic range: 0.5133054
-#likfit: maximised log-likelihood = -811.3
-##--------------------------------------------------------------------------
-
-fit.geo =variofit(variog(coords = loc, data=y,
-                         trend = '1st'),
-                  weights = "equal",
-                  fix.kappa=FALSE, 
-                  ini.cov.pars=c(0.25,0.2)) 
-fit.geo
-#variofit: model parameters estimated by OLS (ordinary least squares):
-#  covariance model is: matern
-#parameter estimates:
-#  tausq sigmasq     phi   kappa 
-#0.0425  0.1284  0.0024  1.0000 
-#Practical Range with cor=0.05 for asymptotic range: 0.009516808
-#variofit: minimised sum of squares = 0.0223
-#------------------------------------------------------
-
-vario0 <- variog(coords = loc, data=res0,
-                trend = '1st',
-               )
-plot(vario0)
-## variogram  (original data, not the res) 
-vario1=variog(coords=loc, 
-              data=y) 
-plot(vario1) 
-
-vario2=variog(coords=loc,
-              data=y, 
-              trend=trend.spatial(~x1+x2+x3) 
-              ) 
-plot(vario2) 
-# least squares 
-fit.expo=variofit(vario2, ini.cov.pars=c(0.15,0.2)) ## try many other models 
-fit.expo
-
-
-#------------------------------------------------------
-lines.variomodel(cov.model="exp", cov.pars=c(0.3,.2), nug=0, max.dist=1)
-ml <- likfit(coords = locc,
-             data = y,
-             ini = c(0.15,0.2))
-ml
-
-
-reml <- likfit(locc, data = y,ini = c(0.15,0.2), fix.nugget = T, method = "RML")
-ols <- variofit(locc,data = y, ini = c(0.15,0.2), fix.nugget = TRUE, weights="equal")
-ols
-wls <- variofit(locc, data = y,ini = c(0.15,0.2), fix.nugget = T)
-
-
-#gstat
-
-
-coordinates(sample_data) = ~ longitude + latitude
-vg = variogram(res0~loc, data = sample_data)
-plot(vg)
-model = vgm(psill = 0.25, 
-            model="Exp", 
-            nugget=0.01, 
-            range=0.1)
-plot(vg,model)
-fit = fit.variogram(vg,model)
-fit
-plot(vg,fit)
-
-
-coordinates(sample_data) = ~ longitude + latitude
-vg.og = variogram(y~loc, data = sample_data)
-plot(vg.og)
-model = vgm(psill = 0.25, 
-            model="Exp", 
-            nugget=0.01, 
-            range=0.15)
-plot(vg.og,model)
-fit = fit.variogram(vg.og,model)
-fit
-plot(vg.og,fit)
-
 
 
 ## --- Exponential ===============================
 loc = cbind(sample_data$longitude, sample_data$latitude)
-y <- log(sample_data$median_house_value) #value at loc
+y      <- log(sample_data$median_house_value) #value at loc
+#y_res  <- res0
+x1     <- sample_data$total_bedrooms 
+x2     <- sample_data$median_income  
+x3     <- sample_data$housing_median_age 
+x4     <- sample_data$longitude
+x5     <- sample_data$latitude
 
-x1  <- sample_data$total_bedrooms #x_total_bedrooms
-x2  <- sample_data$median_income  # x_median_income
-x3  <- sample_data$housing_median_age 
-x4  <- sample_data$longitude
-x5  <- sample_data$longitude
-
-vario2=variog(coords=loc,
+vario1 = variog(coords=loc,
               data=y, 
-              trend=trend.spatial(~x1+x2+x3) 
-) 
-plot(vario2) 
+              trend=trend.spatial(~x1+x2+x3+x4+x5) ) 
+plot(vario1) 
 
-
+#vario.y_res = variog(coords=loc,
+#                     data=y_res, 
+#                     trend=trend.spatial(~x1+x2+x3+x4+x5)) 
+#plot(vario.y_res) 
+#-----same exact variogram plot -------------------
 
 # ------------------OLS
 
-fit.expo.OLS=variofit(vario2, ini.cov.pars=c(0.15,0.2),
+fit.expo.OLS=variofit(vario1, ini.cov.pars=c(0.15,0.2),
                       weights = 'equal',
                       cov.model = "exponential") ## try many other models 
 fit.expo.OLS
@@ -210,15 +120,15 @@ fit.expo.OLS
 #  covariance model is: exponential
 #parameter estimates:
 #  tausq sigmasq     phi 
-#0.0528  0.0775  0.0431 
-#Practical Range with cor=0.05 for asymptotic range: 0.1291828
-#variofit: minimised sum of squares = 0.002
+#0.0479  0.0542  0.0186 
+#Practical Range with cor=0.05 for asymptotic range: 0.05568734
+#variofit: minimised sum of squares = 0.0017
 
 
 
 # ----------------WLS
 
-fit.expo.WLS=variofit(vario2, ini.cov.pars=c(0.15,0.2),
+fit.expo.WLS=variofit(vario1, ini.cov.pars=c(0.15,0.2),
                       weights = 'npairs',
                       cov.model = "exponential") ## try many other models 
 fit.expo.WLS
@@ -226,9 +136,9 @@ fit.expo.WLS
 #  covariance model is: exponential
 #parameter estimates:
 #  tausq sigmasq     phi 
-#0.0342  0.1056  0.0450 
-#Practical Range with cor=0.05 for asymptotic range: 0.1348015
-#variofit: minimised weighted sum of squares = 56.0108
+#0.1058  0.0000  0.1792 
+#Practical Range with cor=0.05 for asymptotic range: 0.5367151
+#variofit: minimised weighted sum of squares = 139.1105
 
 
 #--------------- REML
@@ -237,38 +147,19 @@ zz=rnorm(dim(sample_data)[1], 0,0.1)
 sample_data$longitudee=sample_data$longitude+zz 
 locc = cbind(sample_data$longitudee, sample_data$latitude)
 
-fit2.exp.ML=likfit(coords=locc, 
-            data=y, 
-            trend=trend.spatial(~x1+x2+x3), # mean structure
-            lik.method = "ML",
-            cov.model = "exponential",
-            ini.cov.pars=c(0.15,0.2))  
-fit2.exp.ML
-#likfit: estimated model parameters:
-#  beta0     beta1     beta2     beta3     tausq   sigmasq       phi 
-#"11.0976" " 0.0003" " 0.1750" " 0.0100" " 0.1254" " 0.0088" " 0.0082" 
-#Practical Range with cor=0.05 for asymptotic range: 0.02471925
 
-#likfit: maximised log-likelihood = -620.9
-
-
-
-fit2.exp.reml=likfit(coords=locc, 
+fit.exp.reml=likfit(coords=locc, 
                  data=y, 
-                 trend=trend.spatial(~x1+x2+x3), # mean structure
+                 trend=trend.spatial(~x1+x2+x3+x4+x5), # mean structure
                  lik.method = "REML",
                  cov.model = "exponential",
                  ini.cov.pars=c(0.15,0.2)) 
-fit2.exp.reml
-
+fit.exp.reml
 #likfit: estimated model parameters:
-#  beta0      beta1      beta2      beta3      tausq    sigmasq 
-#" 11.0971" "  0.0003" "  0.1750" "  0.0100" "  0.1341" "  0.7424" 
-#phi 
-#"615.8160" 
-#Practical Range with cor=0.05 for asymptotic range: 1844.82
-
-#likfit: maximised log-likelihood = -621.6
+#  beta0       beta1       beta2       beta3       beta4       beta5       tausq     sigmasq         phi 
+#"-127.3415" "   0.0002" "   0.1413" "   0.0020" "  -1.3370" "  -0.6487" "   0.0762" "   0.0375" "   0.0905" 
+#Practical Range with cor=0.05 for asymptotic range: 0.2711601
+#likfit: maximised log-likelihood = -325.1
 
 #==================================================================
 
@@ -278,23 +169,10 @@ zz=rnorm(dim(sample_data)[1], 0,0.1)
 sample_data$longitudee=sample_data$longitude+zz 
 locc = cbind(sample_data$longitudee, sample_data$latitude)
 
-fit.exp.ML=likfit(coords=locc, 
-            data=y, 
-            trend=trend.spatial(~x1+x2+x3), # mean structure
-            lik.method = "ML",
-            cov.model = "exponential",
-            ini.cov.pars=c(0.30,0.2))  
-fit.exp.ML
-#does not run with the X4 and X5
-##likfit: estimated model parameters:
-#  beta0     beta1     beta2     beta3     tausq   sigmasq       phi 
-#"11.4863" " 0.0002" " 0.1447" " 0.0037" " 0.0867" " 0.0522" " 0.1719" 
-#Practical Range with cor=0.05 for asymptotic range: 0.5149146
-#likfit: maximised log-likelihood = -402.8
 
 fit.exp.reml=likfit(coords=locc, 
                  data=y, 
-                 trend=trend.spatial(~x1+x2+x3), # mean structure
+                 trend=trend.spatial(~x1+x2+x3+x4+x5), # mean structure
                  lik.method = "REML",
                  cov.model = "exponential",
                  ini.cov.pars=c(0.30,0.2)) 
@@ -309,13 +187,11 @@ fit.exp.reml
 
 ## --- spherical ===============================
 
-vario2=variog(coords=loc,
-              data=y, 
-              trend=trend.spatial(~x1+x2+x3) 
-) 
-plot(vario2) 
-
-
+# reminder 
+vario1 = variog(coords=loc,
+                data=y, 
+                trend=trend.spatial(~x1+x2+x3+x4+x5) ) 
+plot(vario1) 
 
 # ------------------OLS
 
@@ -350,17 +226,16 @@ fit.sph.WLS
 
 fit.sph.reml=likfit(coords=locc, 
                     data=y, 
-                    trend=trend.spatial(~x1+x2+x3), # mean structure
+                    trend=trend.spatial(~x1+x2+x3+x4+x5), # mean structure
                     lik.method = "REML",
                     cov.model = "spherical",
                     ini.cov.pars=c(0.15,0.2)) 
 fit.sph.reml
 #likfit: estimated model parameters:
-#  beta0     beta1     beta2     beta3     tausq   sigmasq       phi 
-#"11.4706" " 0.0002" " 0.1446" " 0.0036" " 0.0877" " 0.0603" " 0.3603" 
-#Practical Range with cor=0.05 for asymptotic range: 0.3603041
-#likfit: maximised log-likelihood = -400.6
-
+#  beta0       beta1       beta2       beta3       beta4       beta5       tausq     sigmasq         phi 
+#"-129.9206" "   0.0002" "   0.1412" "   0.0020" "  -1.3486" "  -0.6180" "   0.0779" "   0.0664" "   0.3501" 
+#Practical Range with cor=0.05 for asymptotic range: 0.3501326
+#likfit: maximised log-likelihood = -326.6
 
 
 
