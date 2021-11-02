@@ -1,0 +1,129 @@
+
+
+library(ggplot2)
+library(ggmap)
+library(maps)
+library(mapdata)
+
+
+states <- map_data("state")
+
+## plot over TX 
+
+TX_df <- subset(states, region == "texas")
+
+counties <- map_data("county")
+
+TX_county <- subset(counties, region == "texas")
+
+TX_base <- ggplot(data = TX_df, mapping = aes(x = long, y = lat, group = group)) + 
+  coord_fixed(1.3) + 
+  geom_polygon(color = "black", fill = "gray")
+
+TX_base + theme_nothing()
+
+TX_base + theme_nothing() + 
+  geom_polygon(data = TX_county, fill = NA, color = "white") +
+  geom_polygon(color = "black", fill = NA)  # get the state border back on top
+
+
+## plot subset 
+
+TX_df1=TX_df[TX_df$long> -100 ,]
+
+TX_base1 <- ggplot(data = TX_df1, mapping = aes(x = long, y = lat, group = group)) + 
+  coord_fixed(1.3) + 
+  geom_polygon(color = "black", fill = "pink")
+
+TX_county1=TX_county[TX_county$long> -100,]
+
+TX_base1 + theme_nothing() + 
+  geom_polygon(data = TX_county1, fill = NA, color = "white") + geom_polygon(color = "black", fill = NA)  # get the state border back on top
+
+
+### Texas airbnb property data from kaggle
+
+airbnb=Airbnb_Texas_Rentals
+
+m=ggplot()+ theme_bw() + geom_polygon(data=TX_df, aes(long,lat), fill="grey90") + coord_map() + labs(x=NULL, y=NULL)
+
+m+geom_polygon(data=TX_county, fill=NA, col="white",aes(long,lat,group=group))
+
+
+m+geom_polygon(data=TX_county, fill=NA, col="white",aes(long,lat,group=group))+geom_point(data=airbnb, aes(longitude, latitude, size=average_rate_per_night), colour="red", alpha=0.5)
+
+log_price=log(airbnb$average_rate_per_night)
+
+
+m+geom_polygon(data=TX_county, fill=NA, col="white",aes(long,lat,group=group))+geom_point(data=airbnb, aes(longitude, latitude, size=log_price), colour="red", alpha=0.5)
+
+## longitude and latitude were read as characters! 
+
+## re-read data
+
+
+airbnb=Airbnb_Texas_Rentals
+
+airbnb=airbnb[!is.na(airbnb$longitude) & !is.na(airbnb$latitude),]
+
+
+m+geom_polygon(data=TX_county, fill=NA, col="white",aes(long,lat,group=group))+geom_point(data=airbnb, aes(longitude, latitude, size=average_rate_per_night), colour="red", alpha=0.5)
+
+
+m+geom_polygon(data=TX_county, fill=NA, col="white",aes(long,lat,group=group))+geom_point(data=airbnb, aes(longitude, latitude, color=bedrooms_count), alpha=0.5)
+
+mybreaks=c(2.3, 4, 6, 8, 9.5)
+
+m+geom_polygon(data=TX_county, fill=NA, col="white",aes(long,lat,group=group))+geom_point(data=airbnb, aes(longitude, latitude, size=average_rate_per_night, color=average_rate_per_night, alpha=average_rate_per_night), shape=20, stroke=FALSE) +scale_size_continuous(name="", trans="log", range=c(1,12), breaks=mybreaks)+scale_alpha_continuous(name="", trans="log", range=c(0.1, .9), breaks=mybreaks) 
+  
+log_price=log(airbnb$average_rate_per_night)
+
+m+geom_polygon(data=TX_county, fill=NA, col="white",aes(long,lat,group=group))+geom_point(data=airbnb, aes(longitude, latitude, size=log_price, color=log_price, alpha=log_price), shape=20, stroke=FALSE) +scale_size_continuous(name="", range=c(1,12), breaks=mybreaks)+scale_alpha_continuous(name="", range=c(0.1, .9), breaks=mybreaks) 
+
+
+m+geom_polygon(data=TX_county, fill=NA, col="white",aes(long,lat,group=group))+geom_point(data=airbnb, aes(longitude, latitude, size=log_price, color=log_price, alpha=log_price), shape=20, stroke=FALSE) +scale_size_continuous(name="", range=c(1,12), breaks=mybreaks)+scale_alpha_continuous(name="", range=c(0.1, .9), breaks=mybreaks) 
+
+vignette("ggplot2-specs")
+
+log10_price=log10(airbnb$average_rate_per_night)
+
+m+geom_polygon(data=TX_county, fill=NA, col="white",aes(long,lat,group=group))+geom_point(data=airbnb, aes(longitude, latitude, size=log10_price,alpha=log10_price,color=log10_price))
+
+
+
+## now a simple animation
+
+library(tidyverse)
+library(ggmap)
+library(gganimate)
+
+# ggplot2 themes
+library(cowplot)
+
+# Formatting of HTML tables
+library(kableExtra)
+
+qmplot(longitude, latitude, data=airbnb, maptype="toner-lite", colour=average_rate_per_night)
+
+qmplot(longitude, latitude, data=airbnb, maptype="toner-lite", alpha=0.5) + aes(size=average_rate_per_night)
+
+
+
+qmplot(longitude, latitude, data = airbnb, shape = I(15), zoom = 10, legend = "topleft") +
+  geom_point(aes(size = average_rate_per_night), data = airbnb, color = "green") +
+  scale_size("room rate")
+
+
+qmplot(longitude, latitude, data = airbnb, shape = I(15), legend = "topleft") +
+  geom_point(aes(size = average_rate_per_night), data = airbnb, color = "green") +
+  scale_size("room rate")
+
+qmplot(longitude, latitude, data = airbnb, maptype="toner-lite", alpha=0.5, legend = "topleft") +aes(size=average_rate_per_night, group=Year)+ transition_states(Year)+theme(legend.position="none")+labs(title="Airbnb data", subtitle="Year: {closest_state}", x="Longitude", y="Latitude")
+
+
+qmplot(longitude, latitude, data = airbnb, maptype="toner-lite", alpha=0.5, legend = "topleft") +aes(size=average_rate_per_night, group=Year)+ transition_states(Year)+theme(legend.position="right")+labs(title="Airbnb data", subtitle="Year: {closest_state}", x="Longitude", y="Latitude")
+
+
+qmplot(longitude, latitude, data = airbnb, maptype="toner-lite", alpha=0.5, legend = "topleft") +aes(size=average_rate_per_night, group=Month)+ transition_states(Month)+theme(legend.position="none")+labs(title="Airbnb data", subtitle="Month: {closest_state}", x="Longitude", y="Latitude")
+
+
