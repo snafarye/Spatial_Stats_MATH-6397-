@@ -92,7 +92,7 @@ plot(vgram(loc,res0, dmax = 0.5),lon.lat=TRUE)  # set a dmax for the plot
 ## --- Exponential ===============================
 loc = cbind(sample_data$longitude, sample_data$latitude)
 y      <- log(sample_data$median_house_value) #value at loc
-#y_res  <- res0
+y_res  <- res0
 x1     <- sample_data$total_bedrooms 
 x2     <- sample_data$median_income  
 x3     <- sample_data$housing_median_age 
@@ -155,11 +155,22 @@ fit.exp.reml=likfit(coords=locc,
                  cov.model = "exponential",
                  ini.cov.pars=c(0.15,0.2)) 
 fit.exp.reml
+
 #likfit: estimated model parameters:
 #  beta0       beta1       beta2       beta3       beta4       beta5       tausq     sigmasq         phi 
 #"-127.3415" "   0.0002" "   0.1413" "   0.0020" "  -1.3370" "  -0.6487" "   0.0762" "   0.0375" "   0.0905" 
 #Practical Range with cor=0.05 for asymptotic range: 0.2711601
 #likfit: maximised log-likelihood = -325.1
+
+#------ with data = y_res, notice only the parameters change
+
+#likfit: estimated model parameters:
+#  beta0      beta1      beta2      beta3      beta4      beta5      tausq    sigmasq        phi 
+#"-22.7239" "  0.0000" " -0.0119" " -0.0010" " -0.1681" "  0.0602" "  0.0762" "  0.0375" "  0.0905" 
+#Practical Range with cor=0.05 for asymptotic range: 0.2711601
+#likfit: maximised log-likelihood = -325.1
+
+
 
 #==================================================================
 
@@ -238,7 +249,12 @@ fit.sph.reml
 #likfit: maximised log-likelihood = -326.6
 
 
-
+#----------- with data =  y_res, notice the paramerter are diff, but the max log-lik is the same
+#likfit: estimated model parameters:
+#  beta0      beta1      beta2      beta3      beta4      beta5      tausq    sigmasq        phi 
+#"-25.3030" "  0.0000" " -0.0120" " -0.0009" " -0.1797" "  0.0909" "  0.0779" "  0.0664" "  0.3501" 
+#Practical Range with cor=0.05 for asymptotic range: 0.3501326
+#likfit: maximised log-likelihood = -326.6
 
 
 
