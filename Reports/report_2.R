@@ -125,6 +125,44 @@ fit.expo.OLS
 #variofit: minimised sum of squares = 0.0017
 
 
+D <- rdist.earth(locc,miles = T) # distance
+
+# take cov para estimator from OLS variofit() above
+alpha = 0.0542
+beta  = 0.0186
+delta = 0.0479
+
+
+OLS.para= function(par){
+  print(par)
+  alpha = exp(par[1]) 
+  beta  = exp(par[2])
+  delta = exp(par[3])
+  nu= exp(par[4])/(1+exp(par[4]))*5 
+    
+  
+  M <- cbind(rep(1, dim(D)[1]), x1,x2,x3,x4,x5) # design matrix
+  S <- alpha*exp(-D/beta)                       # covareiance matrix 
+  diag(S) = diag(S) + delta                     # nugget
+  Z = matrix(y, ncol = 1)
+  
+  B_estimate = solve(t(M) %*% (solve(S) %*% M) ) %*%  t(M)%*%solve(S) %*% Z
+
+  print(B_estimate)
+  return(B_estimate)
+  
+  }
+ini = c(0.0542,0.0186,0.0479)
+fit.OLS <- optim(ini, OLS.para
+                 #, control= list(maxit= 100000000)
+                 )
+[,1]
+-1.080342e+02
+x1  1.808418e-04
+x2  1.402975e-01
+x3  1.927285e-03
+x4 -1.197525e+00
+x5 -7.083061e-01
 
 # ----------------WLS
 
