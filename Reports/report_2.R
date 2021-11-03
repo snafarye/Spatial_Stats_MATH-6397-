@@ -178,6 +178,43 @@ fit.expo.WLS
 #Practical Range with cor=0.05 for asymptotic range: 0.5367151
 #variofit: minimised weighted sum of squares = 139.1105
 
+D <- rdist.earth(locc,miles = T) # distance
+# D <- rdist(locc,miles =T)
+alpha = 0.0000
+beta  = 0.1792
+delta = 0.1058
+
+
+WLS.para= function(par){
+  print(par)
+  alpha = exp(par[1]) 
+  beta  = exp(par[2])
+  delta = exp(par[3])
+  nu= exp(par[4])/(1+exp(par[4]))*5 
+  
+  
+  M <- cbind(rep(1, dim(D)[1]), x1,x2,x3,x4,x5) # design matrix
+  S <- alpha*exp(-D/beta)                       # covareiance matrix 
+  diag(S) = diag(S) + delta                     # nugget
+  Z = matrix(y, ncol = 1)
+  
+  B_estimate = solve(t(M) %*% (solve(S) %*% M) ) %*%  t(M)%*%solve(S) %*% Z
+  
+  print(B_estimate)
+  return(B_estimate)
+  
+}
+ini = c(alpha, beta, delta)
+fit.WLS <- optim(ini, 
+                 WLS.para
+                 #, control= list(maxit= 100000000)
+)
+   -1.087199e+02
+x1  1.786055e-04
+x2  1.397721e-01
+x3  1.855820e-03
+x4 -1.202295e+00
+x5 -7.054010e-01
 
 #--------------- REML
 #likelihood method
