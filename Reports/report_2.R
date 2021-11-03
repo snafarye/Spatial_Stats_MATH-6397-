@@ -135,10 +135,10 @@ delta = 0.0479
 
 OLS.para= function(par){
   print(par)
-  alpha = exp(par[1]) 
-  beta  = exp(par[2])
-  delta = exp(par[3])
-  nu= exp(par[4])/(1+exp(par[4]))*5 
+  alpha = (par[1]) 
+  beta  = (par[2])
+  delta = (par[3])
+  nu= (par[4])/(1+exp(par[4]))*5 
     
   
   M <- cbind(rep(1, dim(D)[1]), x1,x2,x3,x4,x5) # design matrix
@@ -157,12 +157,24 @@ fit.OLS <- optim(ini, OLS.para
                  #, control= list(maxit= 100000000)
                  )
 [,1]
--1.080342e+02
-x1  1.808418e-04
-x2  1.402975e-01
-x3  1.927285e-03
-x4 -1.197525e+00
-x5 -7.083061e-01
+# with log() of our data --> aka y
+   -1.054698e+02
+x1  2.033052e-04
+x2  1.527247e-01
+x3  2.843610e-03
+x4 -1.176089e+00
+x5 -7.095144e-01
+
+# with res0
+
+
+   -8.521851e-01
+x1 -1.959233e-06
+x2 -4.573665e-04
+x3 -9.088530e-05
+x4 -7.212349e-03
+x5 -6.174119e-04
+
 
 # ----------------WLS
 
@@ -187,10 +199,10 @@ delta = 0.1058
 
 WLS.para= function(par){
   print(par)
-  alpha = exp(par[1]) 
-  beta  = exp(par[2])
-  delta = exp(par[3])
-  nu= exp(par[4])/(1+exp(par[4]))*5 
+  alpha = (par[1]) 
+  beta  = (par[2])
+  delta = (par[3])
+  nu= (par[4])/(1+exp(par[4]))*5 
   
   
   M <- cbind(rep(1, dim(D)[1]), x1,x2,x3,x4,x5) # design matrix
@@ -209,12 +221,23 @@ fit.WLS <- optim(ini,
                  WLS.para
                  #, control= list(maxit= 100000000)
 )
-   -1.087199e+02
-x1  1.786055e-04
-x2  1.397721e-01
-x3  1.855820e-03
-x4 -1.202295e+00
-x5 -7.054010e-01
+
+# with log() of data aka y 
+-1.054698e+02
+x1  2.033052e-04
+x2  1.527247e-01
+x3  2.843610e-03
+x4 -1.176089e+00
+x5 -7.095144e-01
+
+#with res0
+
+-8.521851e-01
+x1 -1.959233e-06
+x2 -4.573665e-04
+x3 -9.088530e-05
+x4 -7.212349e-03
+x5 -6.174119e-04
 
 #--------------- REML
 #likelihood method
