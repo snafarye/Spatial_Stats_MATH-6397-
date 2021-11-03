@@ -317,6 +317,31 @@ fit.sph.OLS
 #variofit: minimised sum of squares = 0.0019
 
 
+
+ols <- variofit(vario1,
+                weights = "equal",
+                fix.kappa=FALSE, 
+                cov.model = "spherical",
+                ini.cov.pars=c(0.15,0.2)) 
+
+
+#PARAMETER ESTIMATION FUNCTION FOR OLS
+
+D <- rdist.earth(locc,miles = T) # distance
+
+#COVARIANCE PARAMETER ESTIMATES FROM OLS variofit()
+alpha = 0.0576
+beta  = 0.0627
+delta = 0.0458
+  
+M <- cbind(rep(1, dim(D)[1]), x1,x2,x3,x4,x5)      # design matrix
+S = alpha*(1-((3*D)/(2*beta))+((D**3)/(2*(beta**3))))
+diag(S) = diag(S) + delta                         # nugget
+Z = matrix(res0, ncol = 1)
+  
+B_estimate = solve(t(M) %*% (solve(S) %*% M) ) %*% t(M)%*%solve(S) %*% Z
+B_estimate
+
 # ----------------WLS
 
 fit.sph.WLS=variofit(vario2, ini.cov.pars=c(0.15,0.2),
