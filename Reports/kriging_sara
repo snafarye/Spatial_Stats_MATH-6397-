@@ -32,7 +32,9 @@ delta = 0.0479
 
 D <- rdist.earth(locc,miles = T) # distance b/t the selected data
 d = rdist(locc,  locc_k)         # distance b/t selected data and kriging data
-S = alpha * exp(-D/beta)         # covariance matrix 
+
+S = alpha * exp(-D/beta)         # covariance matrix  ----------  change depending on cov function 
+
 diag(S) = diag(S)+delta          # add nugget 
 Z = matrix(res0, ncol = 1)       # data vector
 
