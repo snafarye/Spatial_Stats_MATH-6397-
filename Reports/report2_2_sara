@@ -260,6 +260,8 @@ fit.sph.OLS
 #variofit: minimised sum of squares = 0.0017
 
 
+
+
 D <- rdist.earth(locc,miles = T) # distance
 
 alpha = 0.0542
@@ -268,27 +270,30 @@ delta = 0.0480
 
   
   M <- cbind(rep(1, dim(D)[1]), x1,x2,x3,x4,x5)                 # design matrix
-  S = alpha*(1-((3*D)/(2*beta))+((D**3)/(2*(beta**3))))  # covareiance matrix 
+  S = alpha*(1-((3*D)/(2*beta))+((D**3)/(2*(beta**3))))         # covareiance matrix 
   diag(S) = diag(S) + delta                                     # nugget
   Z = matrix(res0, ncol = 1)
   
-  B_estimate = solve(t(M) %*% (solve(S) %*% M) ) %*%  t(M)%*%solve(S) %*% Z
+  B_estimate.ols.sph = solve(t(M) %*% (solve(S, tol = 1e-20) %*% M) , tol = 1e-20) %*%  t(M)%*%solve(S, tol = 1e-20) %*% Z
   
-  print(B_estimate)
+  print(B_estimate.ols.sph)
 
-  1.524364e-11
-  x1 1.144802e-17
-  x2 1.086489e-15
-  x3 7.771832e-16
-  x4 1.351987e-13
-  x5 5.555715e-14
-# with res0
-  1.524364e-11
-  x1 1.144802e-17
-  x2 1.086489e-15
-  x3 7.771832e-16
-  x4 1.351987e-13
-  x5 5.555715e-14
+  -1.563601e+03
+  x1  4.526192e-04
+  x2  1.524928e-01
+  x3  8.549632e-03
+  x4 -2.142840e+00
+  x5  3.565260e+01
+  
+  #with res0
+  -1.458978e+03
+  x1  2.473548e-04
+  x2 -6.892122e-04
+  x3  5.615137e-03
+  x4 -9.739633e-01
+  x5  3.636128e+01
+  
+  
 # ----------------WLS
 
 fit.sph.WLS=variofit(vario1, ini.cov.pars=c(0.15,0.2),
@@ -312,26 +317,26 @@ delta = 0.0480
 M <- cbind(rep(1, dim(D)[1]), x1,x2,x3,x4,x5)                 # design matrix
 S = alpha*(1-((3*D)/(2*beta))+((D**3)/(2*(beta**3))))  # covareiance matrix 
 diag(S) = diag(S) + delta                                     # nugget
-Z = matrix(y, ncol = 1)
+Z = matrix(res0, ncol = 1)
 
-B_estimate = solve(t(M) %*% (solve(S) %*% M) ) %*%  t(M)%*%solve(S) %*% Z
+B_estimate.wls.sph = solve(t(M) %*% (solve(S, tol = 1e-20) %*% M), tol = 1e-20 ) %*%  t(M)%*%solve(S, tol = 1e-20) %*% Z
 
-print(B_estimate)
+print(B_estimate.wls.sph)
 
-1.524364e-11
-x1 1.144802e-17
-x2 1.086489e-15
-x3 7.771832e-16
-x4 1.351987e-13
-x5 5.555715e-14
+-1.563716e+03
+x1  4.331168e-04
+x2  1.501473e-01
+x3  8.182267e-03
+x4 -2.145028e+00
+x5  3.560799e+01
+
 # with res0
-
-1.524364e-11
-x1 1.144802e-17
-x2 1.086489e-15
-x3 7.771832e-16
-x4 1.351987e-13
-x5 5.555715e-14
+-1.459103e+03
+x1  2.278524e-04
+x2 -3.034700e-03
+x3  5.247771e-03
+x4 -9.761513e-01
+x5  3.631695e+01
 
 
 #--------------- REML
