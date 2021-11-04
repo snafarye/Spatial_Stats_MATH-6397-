@@ -1,0 +1,53 @@
+##---------- Kriging  --------------------------------------------------------- 
+# 1500 selected data
+x1     <- sample_data$total_bedrooms 
+x2     <- sample_data$median_income  
+x3     <- sample_data$housing_median_age 
+x4     <- sample_data$longitude
+x5     <- sample_data$latitude
+
+# 100 kirging data
+k1     <- sample_kriging_data$total_bedrooms
+k2     <- sample_kriging_data$median_income  
+k3     <- sample_kriging_data$housing_median_age 
+k4     <- sample_kriging_data$longitude
+k5     <- sample_kriging_data$latitude
+
+
+# locations for selected data and kriging data
+locc = cbind(sample_data$longitudee, sample_data$latitude)
+locc_k = cbind(sample_kriging_data$longitude, sample_kriging_data$latitude)
+
+# modify code below  
+M = cbind(rep(1, dim(D)[1]), x1,x2,x3,x4,x5) 
+m=t(cbind(rep(1,100), k1,k2,k3,k4,k5)) 
+
+
+
+# -------------------------(my results)
+
+alpha = 0.0542
+beta  = 0.0186
+delta = 0.0479
+
+D <- rdist.earth(locc,miles = T) # distance b/t the selected data
+d = rdist(locc,  locc_k)         # distance b/t selected data and kriging data
+S = alpha * exp(-D/beta)         # covariance matrix 
+diag(S) = diag(S)+delta          # add nugget 
+Z = matrix(res0, ncol = 1)       # data vector
+
+
+k = alpha*exp(-d/beta)
+
+lambda = (solve(S) - solve(S) %*% M %*% solve(t(M) %*% solve(S) %*% M) %*% t(M) %*% solve(S) ) %*% k + solve(S) %*% M %*% solve(t(M) %*% solve(S) %*% M) %*% m 
+dim(lambda)
+
+krig.expo.reml = t(lambda) %*% Z 
+dim(krig.expo.reml)
+
+# predict values in log
+#plot(sample_kriging_data$median_house_value, krig.expo.reml) #x --> true log price, y --> kriging results, 45 degree  log scale
+
+#mse = mean((krig.expo.reml-log(data2$average_rate_per_night))^2);mse
+#mae = mean(abs(krig.expo.reml-log(data2$average_rate_per_night)));mae
+
