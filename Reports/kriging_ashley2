@@ -1,0 +1,192 @@
+library(readxl)
+library(fields)
+library(gstat) 
+library(sp) 
+library(geoR)
+
+general_data = data1 
+new_data <- na.omit(general_data) 
+
+set.seed(222)
+# 1500 sample data
+sample_data = new_data[sample(1:dim(new_data)[1],1500), ] #create a sample dataset of 1500 rows
+
+# 100 kriging data 
+sample_kriging_data = new_data[sample(setdiff(1:dim(new_data)[1], sample_data),100),] # 100 location for kriging
+
+# linear regression model from report 1
+fit0 = lm(log(median_house_value) ~longitude+latitude+
+            total_bedrooms+ 
+            median_income+housing_median_age, 
+          data = sample_data)
+summary(fit0)
+res0 = fit0$residuals
+
+loc = cbind(sample_data$longitude, sample_data$latitude)
+y      <- log(sample_data$median_house_value) #value at loc
+y_res  <- res0
+x1     <- sample_data$total_bedrooms 
+x2     <- sample_data$median_income  
+x3     <- sample_data$housing_median_age 
+x4     <- sample_data$longitude
+x5     <- sample_data$latitude
+
+
+
+## Kriging 
+
+# modify code below  
+
+M=cbind(rep(1,1500), x1,x2,x3,x4,x5) #design matrix of observations
+
+m=t(cbind(rep(1,100), sample_kriging_data$total_bedrooms,sample_kriging_data$median_income,
+          sample_kriging_data$housing_median_age,sample_kriging_data$longitude,sample_kriging_data$latitude)) #design matrix of kriging locations
+
+#lets use results from exponential OLS
+
+alpha=0.0542 #(sigmasq) variance 
+beta=0.0186 #(phi) spatial range 
+delta=0.0458 #(tausq) nugget
+
+D= rdist.earth(loc,miles = T) #rdist because euclidian distance
+S= alpha *exp(-D/beta)
+diag(S)=diag(S)+delta
+d=rdist.earth(cbind(loc),cbind(sample_kriging_data$longitude,sample_kriging_data$latitude),miles = T)
+k=alpha*exp(-d/beta)
+
+
+lambda=(solve(S) - solve(S) %*% M %*% solve(t(M) %*% solve(S) %*% M) %*% t(M) %*% solve(S) ) %*% k + solve(S) %*% M %*% solve(t(M) %*% solve(S) %*% M) %*% m 
+krig.exp.ols=t(lambda) %*% log(sample_data$median_house_value)
+#krig.exp.reml these are the kriging predictions in log!
+
+plot(log(sample_kriging_data$median_house_value),krig.exp.ols)
+
+mse=mean((krig.exp.ols-log(sample_kriging_data$median_house_value))^2)
+#mse in log form
+mae=mean(abs(krig.exp.ols-log(sample_kriging_data$median_house_value)))
+
+lines(log(sample_kriging_data$median_house_value),log(sample_kriging_data$median_house_value)) #y=x line not perfect predictions but good
+
+#########exponential wls
+alpha=0.0000 #(sigmasq) variance 
+beta=0.1792 #(phi) spatial range 
+delta=0.1058 #(tausq) nugget
+
+D= rdist.earth(loc,miles = T) #rdist because euclidian distance
+S= alpha *exp(-D/beta)
+diag(S)=diag(S)+delta
+d=rdist.earth(cbind(loc),cbind(sample_kriging_data$longitude,sample_kriging_data$latitude),miles = T)
+k=alpha*exp(-d/beta)
+
+
+lambda=(solve(S) - solve(S) %*% M %*% solve(t(M) %*% solve(S) %*% M) %*% t(M) %*% solve(S) ) %*% k + solve(S) %*% M %*% solve(t(M) %*% solve(S) %*% M) %*% m 
+krig.exp.ols=t(lambda) %*% log(sample_data$median_house_value)
+
+plot(log(sample_kriging_data$median_house_value),krig.exp.ols)
+
+mse2=mean((krig.exp.ols-log(sample_kriging_data$median_house_value))^2)
+
+mae2=mean(abs(krig.exp.ols-log(sample_kriging_data$median_house_value)))
+
+
+lines(log(sample_kriging_data$median_house_value),log(sample_kriging_data$median_house_value)) #y=x line not perfect predictions but good
+
+
+
+#########exponential REML
+alpha=0.0375 #(sigmasq) variance 
+beta=0.0777 #(phi) spatial range 
+delta=0.0738 #(tausq) nugget
+
+D= rdist.earth(loc,miles = T) #rdist because euclidian distance
+S= alpha *exp(-D/beta)
+diag(S)=diag(S)+delta
+d=rdist.earth(cbind(loc),cbind(sample_kriging_data$longitude,sample_kriging_data$latitude),miles = T)
+k=alpha*exp(-d/beta)
+
+
+lambda=(solve(S) - solve(S) %*% M %*% solve(t(M) %*% solve(S) %*% M) %*% t(M) %*% solve(S) ) %*% k + solve(S) %*% M %*% solve(t(M) %*% solve(S) %*% M) %*% m 
+krig.exp.ols=t(lambda) %*% log(sample_data$median_house_value)
+
+plot(log(sample_kriging_data$median_house_value),krig.exp.ols)
+
+mse3=mean((krig.exp.ols-log(sample_kriging_data$median_house_value))^2)
+
+mae3=mean(abs(krig.exp.ols-log(sample_kriging_data$median_house_value)))
+
+
+lines(log(sample_kriging_data$median_house_value),log(sample_kriging_data$median_house_value)) #y=x line not perfect predictions but good
+
+#########spherical ols
+alpha=0.0542 #(sigmasq) variance 
+beta=0.0582 #(phi) spatial range 
+delta=0.0480 #(tausq) nugget
+
+D= rdist.earth(loc,miles = T) #rdist because euclidian distance
+S = alpha*(1-((3*D)/(2*beta))+((D**3)/(2*(beta**3))))
+diag(S)=diag(S)+delta
+d=rdist.earth(cbind(loc),cbind(sample_kriging_data$longitude,sample_kriging_data$latitude),miles = T)
+k=alpha*exp(-d/beta)
+
+
+lambda=(solve(S) - solve(S) %*% M %*% solve(t(M) %*% solve(S) %*% M) %*% t(M) %*% solve(S) ) %*% k + solve(S) %*% M %*% solve(t(M) %*% solve(S) %*% M) %*% m 
+krig.exp.ols=t(lambda) %*% log(sample_data$median_house_value)
+
+plot(log(sample_kriging_data$median_house_value),krig.exp.ols)
+
+mse4=mean((krig.exp.ols-log(sample_kriging_data$median_house_value))^2)
+
+mae4=mean(abs(krig.exp.ols-log(sample_kriging_data$median_house_value)))
+
+
+lines(log(sample_kriging_data$median_house_value),log(sample_kriging_data$median_house_value)) #y=x line not perfect predictions but good
+
+#########spherical wls
+alpha=0.0593 #(sigmasq) variance 
+beta=0.0663 #(phi) spatial range 
+delta=0.0480 #(tausq) nugget
+
+D= rdist.earth(loc,miles = T) #rdist because euclidian distance
+S = alpha*(1-((3*D)/(2*beta))+((D**3)/(2*(beta**3))))
+diag(S)=diag(S)+delta
+d=rdist.earth(cbind(loc),cbind(sample_kriging_data$longitude,sample_kriging_data$latitude),miles = T)
+k=alpha*exp(-d/beta)
+
+
+lambda=(solve(S) - solve(S) %*% M %*% solve(t(M) %*% solve(S) %*% M) %*% t(M) %*% solve(S) ) %*% k + solve(S) %*% M %*% solve(t(M) %*% solve(S) %*% M) %*% m 
+krig.exp.ols=t(lambda) %*% log(sample_data$median_house_value)
+
+plot(log(sample_kriging_data$median_house_value),krig.exp.ols)
+
+mse5=mean((krig.exp.ols-log(sample_kriging_data$median_house_value))^2)
+
+mae5=mean(abs(krig.exp.ols-log(sample_kriging_data$median_house_value)))
+
+
+lines(log(sample_kriging_data$median_house_value),log(sample_kriging_data$median_house_value)) #y=x line not perfect predictions but good
+
+
+#########spherical reml
+alpha=0.0477 #(sigmasq) variance 
+beta=0.2225 #(phi) spatial range 
+delta=0.0767 #(tausq) nugget
+
+D= rdist.earth(loc,miles = T) #rdist because euclidian distance
+S = alpha*(1-((3*D)/(2*beta))+((D**3)/(2*(beta**3))))
+diag(S)=diag(S)+delta
+d=rdist.earth(cbind(loc),cbind(sample_kriging_data$longitude,sample_kriging_data$latitude),miles = T)
+k=alpha*exp(-d/beta)
+
+
+lambda=(solve(S) - solve(S) %*% M %*% solve(t(M) %*% solve(S) %*% M) %*% t(M) %*% solve(S) ) %*% k + solve(S) %*% M %*% solve(t(M) %*% solve(S) %*% M) %*% m 
+krig.exp.ols=t(lambda) %*% log(sample_data$median_house_value)
+
+plot(log(sample_kriging_data$median_house_value),krig.exp.ols)
+
+mse6=mean((krig.exp.ols-log(sample_kriging_data$median_house_value))^2)
+
+mae6=mean(abs(krig.exp.ols-log(sample_kriging_data$median_house_value)))
+
+
+lines(log(sample_kriging_data$median_house_value),log(sample_kriging_data$median_house_value)) #y=x line not perfect predictions but good
+
