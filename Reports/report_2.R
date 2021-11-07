@@ -25,71 +25,6 @@ nrow(sample_data)#check to see if sample dataset has 1500 rows
 sample_kriging_data = new_data[sample(setdiff(1:dim(new_data)[1], sample_data),100),] # 100 location for kriging
 nrow(sample_kriging_data)
 
-
-# log transformation of mean_house_value? 
-hist(sample_data$median_house_value)
-hist(log(sample_data$median_house_value))
-
-
-qqnorm(sample_data$median_house_value)
-qqline(sample_data$median_house_value)
-
-qqnorm(log(sample_data$median_house_value))
-qqline(log(sample_data$median_house_value))
-
-hist(res0);qqnorm(res0);qqline(res0)
-# best to take the log of the median_house_value for better normality results
-# later see that using the residual as the predicting value is the best option ? 
-
-
-# variables to use for covariates variables ro help describe dependent variable ??
-par(mfrow=c(2,3))
-plot(sample_data$housing_median_age,      log(sample_data$median_house_value)) # no clear linear/non-linear trend 
-plot(sample_data$total_bedrooms,          log(sample_data$median_house_value)) # some what of a pos linear trend, but not strong  
-plot(sample_data$median_income,           log(sample_data$median_house_value)) # much more significant , pos trend
-
-plot(sample_data$longitude,      log(sample_data$median_house_value)) # not really see a sig. relationship b/t house_median_value
-plot(sample_data$latitude,       log(sample_data$median_house_value)) # and long./ lat 
-par(mfrow=c(1,1))
-
-
-# Use the same linear regression model you used in team report 1 (with the same covariates)
-# parameters: total_bedrooms,   median_income,  housing_median_age
-
-# linear regression model from report 1
-fit0 = lm(log(median_house_value) ~longitude+latitude+
-           total_bedrooms+ 
-           median_income+housing_median_age, 
-          data = sample_data)
-summary(fit0)
-res0 = fit0$residuals
-plot(res0)
-quilt.plot(sample_data$longitude, sample_data$latitude, res0)
-
-hist(res0);qqnorm(res0);qqline(res0)
-
-par(mfrow=c(2,3))
-plot(sample_data$housing_median_age,      res0) # no clear linear/non-linear trend 
-plot(sample_data$total_bedrooms,          res0) # some what of a pos linear trend, but not strong  
-plot(sample_data$median_income,           res0) # much more significant , pos trend
-
-plot(sample_data$longitude,               res0) # not really see a sig. relationship b/t house_median_value
-plot(sample_data$latitude,                res0) # and long./ lat 
-par(mfrow=c(1,1))
-
-loc = cbind(sample_data$longitude, sample_data$latitude)
-
-plot(vgram(loc,log(sample_data$median_house_value)),lon.lat=TRUE) #Signs of spacial varying mean
-plot(vgram(loc,log(sample_data$median_house_value),dmax = 0.6), lon.lat=TRUE)
-
-plot(vgram(loc,sample_data$median_house_value),lon.lat=TRUE) #still have Signs of spacial varying mean
-plot(vgram(loc,res0),lon.lat=TRUE)  # use residual to get a better variogram plot
-plot(vgram(loc,res0, dmax = 0.5),lon.lat=TRUE)  # set a dmax for the plot
-
-# -----------  part 1-----------------------------------------------------------
-
-
-## --- Exponential ===============================
 loc = cbind(sample_data$longitude, sample_data$latitude)
 y      <- log(sample_data$median_house_value) #value at loc
 y_res  <- res0
@@ -99,22 +34,35 @@ x3     <- sample_data$housing_median_age
 x4     <- sample_data$longitude
 x5     <- sample_data$latitude
 
-vario1 = variog(coords=loc,
-              data=y, 
-              trend=trend.spatial(~x1+x2+x3+x4+x5) ) 
-plot(vario1) 
+quilt.plot(sample_data$longitude, sample_data$latitude, y)
+US(add=T) 
 
-#vario.y_res = variog(coords=loc,
-#                     data=y_res, 
-#                     trend=trend.spatial(~x1+x2+x3+x4+x5)) 
-#plot(vario.y_res) 
-#-----same exact variogram plot -------------------
 
-# ------------------OLS
+#----- linear regression model from report 1
+fit0 = lm(y ~ x1+x2+x3+x4+x5,  data = sample_data)
+summary(fit0)
+res0 = fit0$residuals
+summary(res0)
 
-fit.expo.OLS=variofit(vario1, ini.cov.pars=c(0.15,0.2),
+#plot(res0)
+quilt.plot(sample_data$longitude, sample_data$latitude, res0)
+US(add=T) 
+
+#------------------- variogram----------------
+vario0 = variog(coords=loc,
+                     data=y, 
+                     trend=trend.spatial(~x1+x2+x3+x4+x5)) 
+plot(vario0) 
+
+# ------------------ OLS ------------------------------------------------
+zz=rnorm(dim(sample_data)[1], 0,0.1) 
+sample_data$longitudee=sample_data$longitude+zz 
+locc = cbind(sample_data$longitudee, sample_data$latitude)
+
+
+fit.expo.OLS=variofit(vario0, ini.cov.pars=c(0.15,0.2),
                       weights = 'equal',
-                      cov.model = "exponential") ## try many other models 
+                      cov.model = "exponential")
 fit.expo.OLS
 #variofit: model parameters estimated by OLS (ordinary least squares):
 #  covariance model is: exponential
@@ -124,275 +72,288 @@ fit.expo.OLS
 #Practical Range with cor=0.05 for asymptotic range: 0.05568734
 #variofit: minimised sum of squares = 0.0017
 
-
 D <- rdist.earth(locc,miles = T) # distance
 
-# take cov para estimator from OLS variofit() above
 alpha = 0.0542
 beta  = 0.0186
 delta = 0.0479
 
+M <- cbind(rep(1, dim(D)[1]), x1,x2,x3,x4,x5) # design matrix
+S <- alpha*exp(-D/beta)                       # covareiance matrix 
+diag(S) = diag(S) + delta                     # nugget
+Z = matrix(res0, ncol = 1)
 
-OLS.para= function(par){
-  print(par)
-  alpha = (par[1]) 
-  beta  = (par[2])
-  delta = (par[3])
-  nu= (par[4])/(1+exp(par[4]))*5 
-    
-  
-  M <- cbind(rep(1, dim(D)[1]), x1,x2,x3,x4,x5) # design matrix
-  S <- alpha*exp(-D/beta)                       # covareiance matrix 
-  diag(S) = diag(S) + delta                     # nugget
-  Z = matrix(y, ncol = 1)
-  
-  B_estimate = solve(t(M) %*% (solve(S) %*% M) ) %*%  t(M)%*%solve(S) %*% Z
+B_estimate = solve(t(M) %*% (solve(S) %*% M) ) %*%  t(M)%*%solve(S) %*% Z
+B_estimate
+print(round(B_estimate,5))
 
-  print(B_estimate)
-  return(B_estimate)
-  
-  }
-ini = c(0.0542,0.0186,0.0479)
-fit.OLS <- optim(ini, OLS.para
-                 #, control= list(maxit= 100000000)
-                 )
-[,1]
-# with log() of our data --> aka y
-   -1.054698e+02
-x1  2.033052e-04
-x2  1.527247e-01
-x3  2.843610e-03
-x4 -1.176089e+00
-x5 -7.095144e-01
+-1.045835e+02
+x1  2.060834e-04
+x2  1.529699e-01
+x3  2.984820e-03
+x4 -1.168275e+00
+x5 -7.078880e-01
 
 # with res0
+3.412858e-02
+x1  8.190126e-07
+x2 -2.121486e-04
+x3  5.032516e-05
+x4  6.013972e-04
+x5  1.008981e-03
+
+##---------- Kriging  --------------------------------------------------------- 
+res <- (lm(log(median_house_value) ~ total_bedrooms+ 
+             median_income+housing_median_age + 
+             longitude+latitude,  data = sample_data))$residuals
+
+# 100 kirging data
+yk      <- log(sample_kriging_data$median_house_value) #value at loc
+k1     <- sample_kriging_data$total_bedrooms
+k2     <- sample_kriging_data$median_income  
+k3     <- sample_kriging_data$housing_median_age 
+k4     <- sample_kriging_data$longitude
+k5     <- sample_kriging_data$latitude
+
+# locations for selected data and kriging data
+locc = cbind(sample_data$longitude, sample_data$latitude)
+locc_k = cbind(sample_kriging_data$longitude, sample_kriging_data$latitude)
+
+# distance
+D <- rdist.earth(locc,miles = T) # distance b/t the selected data
+d = rdist.earth(locc,  locc_k, miles = T)         # distance b/t selected data and kriging data
+
+# modify code below  
+M = cbind(rep(1, dim(D)[1]), x1,x2,x3,x4,x5) 
+m = t(cbind(rep(1,100), k1,k2,k3,k4,k5)) 
+
+Z = matrix(res, ncol = 1)       # data vector
+
+# -------------------------(my results)
+######## exponential OLS
+alpha = 0.0542
+beta  = 0.0186
+delta = 0.0479
+
+S = alpha * exp(-D/beta)         # covariance matrix 
+diag(S) = diag(S)+delta          # add nugget 
+k = alpha*exp(-d/beta)
+lambda = (solve(S) - solve(S) %*% M %*% solve(t(M) %*% solve(S) %*% M) %*% t(M) %*% solve(S) ) %*% k + solve(S) %*% M %*% solve(t(M) %*% solve(S) %*% M) %*% m 
+dim(lambda)
+
+krig.exp.ols = t(lambda) %*% Z 
+dim(krig.exp.ols)
 
 
-   -8.521851e-01
-x1 -1.959233e-06
-x2 -4.573665e-04
-x3 -9.088530e-05
-x4 -7.212349e-03
-x5 -6.174119e-04
+plot(yk,krig.exp.ols)
 
-
-# ----------------WLS
-
-fit.expo.WLS=variofit(vario1, ini.cov.pars=c(0.15,0.2),
-                      weights = 'npairs',
-                      cov.model = "exponential") ## try many other models 
-fit.expo.WLS
-#variofit: model parameters estimated by WLS (weighted least squares):
-#  covariance model is: exponential
-#parameter estimates:
-#  tausq sigmasq     phi 
-#0.1058  0.0000  0.1792 
-#Practical Range with cor=0.05 for asymptotic range: 0.5367151
-#variofit: minimised weighted sum of squares = 139.1105
-
-D <- rdist.earth(locc,miles = T) # distance
-# D <- rdist(locc,miles =T)
-alpha = 0.0000
-beta  = 0.1792
-delta = 0.1058
-
-
-WLS.para= function(par){
-  print(par)
-  alpha = (par[1]) 
-  beta  = (par[2])
-  delta = (par[3])
-  nu= (par[4])/(1+exp(par[4]))*5 
-  
-  
-  M <- cbind(rep(1, dim(D)[1]), x1,x2,x3,x4,x5) # design matrix
-  S <- alpha*exp(-D/beta)                       # covareiance matrix 
-  diag(S) = diag(S) + delta                     # nugget
-  Z = matrix(y, ncol = 1)
-  
-  B_estimate = solve(t(M) %*% (solve(S) %*% M) ) %*%  t(M)%*%solve(S) %*% Z
-  
-  print(B_estimate)
-  return(B_estimate)
-  
-}
-ini = c(alpha, beta, delta)
-fit.WLS <- optim(ini, 
-                 WLS.para
-                 #, control= list(maxit= 100000000)
-)
-
-# with log() of data aka y 
--1.054698e+02
-x1  2.033052e-04
-x2  1.527247e-01
-x3  2.843610e-03
-x4 -1.176089e+00
-x5 -7.095144e-01
-
-#with res0
-
--8.521851e-01
-x1 -1.959233e-06
-x2 -4.573665e-04
-x3 -9.088530e-05
-x4 -7.212349e-03
-x5 -6.174119e-04
-
-#--------------- REML
-#likelihood method
-zz=rnorm(dim(sample_data)[1], 0,0.1) 
-sample_data$longitudee=sample_data$longitude+zz 
-locc = cbind(sample_data$longitudee, sample_data$latitude)
-
-
-fit.exp.reml=likfit(coords=locc, 
-                 data=y, 
-                 trend=trend.spatial(~x1+x2+x3+x4+x5), # mean structure
-                 lik.method = "REML",
-                 cov.model = "exponential",
-                 ini.cov.pars=c(0.15,0.2)) 
-fit.exp.reml
-
-#likfit: estimated model parameters:
-#  beta0       beta1       beta2       beta3       beta4       beta5       tausq     sigmasq         phi 
-#"-127.3415" "   0.0002" "   0.1413" "   0.0020" "  -1.3370" "  -0.6487" "   0.0762" "   0.0375" "   0.0905" 
-#Practical Range with cor=0.05 for asymptotic range: 0.2711601
-#likfit: maximised log-likelihood = -325.1
-
-#------ with data = y_res, notice only the parameters change
-
-#likfit: estimated model parameters:
-#  beta0      beta1      beta2      beta3      beta4      beta5      tausq    sigmasq        phi 
-#"-22.7239" "  0.0000" " -0.0119" " -0.0010" " -0.1681" "  0.0602" "  0.0762" "  0.0375" "  0.0905" 
-#Practical Range with cor=0.05 for asymptotic range: 0.2711601
-#likfit: maximised log-likelihood = -325.1
+mse1=mean((krig.exp.ols-yk)^2)
+mse1 #in log form
+mae1=mean(abs(krig.exp.ols-yk))
+mae1
+lines(yk,yk) #y=x line not perfect predictions but good
 
 
 
-#==================================================================
 
-# changing the aplha and beta values to 0.30 and 0.2
-#likelihood method
-zz=rnorm(dim(sample_data)[1], 0,0.1) 
-sample_data$longitudee=sample_data$longitude+zz 
-locc = cbind(sample_data$longitudee, sample_data$latitude)
+# with yk log
+> mse1=mean((krig.exp.ols-yk)^2)
+> mse1 #in log form
+[1] 0.04423849
+> mae1=mean(abs(krig.exp.ols-yk))
+> mae1
+[1] 0.1524849
 
 
-fit.exp.reml=likfit(coords=locc, 
-                 data=y, 
-                 trend=trend.spatial(~x1+x2+x3+x4+x5), # mean structure
-                 lik.method = "REML",
-                 cov.model = "exponential",
-                 ini.cov.pars=c(0.30,0.2)) 
-fit.exp.reml
-#likfit: estimated model parameters:
-#  beta0     beta1     beta2     beta3     tausq   sigmasq       phi 
-#"11.4908" " 0.0002" " 0.1446" " 0.0037" " 0.0871" " 0.0593" " 0.2020" 
-#Practical Range with cor=0.05 for asymptotic range: 0.6050156
-#likfit: maximised log-likelihood = -401.1
+# with res of the kriging
+> mse1=mean((krig.exp.ols-yk)^2)
+> mse1 #in log form
+[1] 152.5091
+> mae1=mean(abs(krig.exp.ols-yk))
+> mae1
+[1] 12.34164
 
 
 
-## --- spherical ===============================
+##-----------  local statinarity ----------------------------
 
-# reminder 
-vario1 = variog(coords=loc,
-                data=y, 
-                trend=trend.spatial(~x1+x2+x3+x4+x5) ) 
-plot(vario1) 
+# quick renaming 
+data0  = sample_data
+data.v = sample_kriging_data
 
-# ------------------OLS
+range(sample_data$longitude)
+data1=data0[data0$longitude < -122.445,] 
+data2=data0[data0$longitude >= -122.445 & data0$longitude <  -122.300,]
+data3=data0[data0$longitude >=  -122.300 & data0$longitude< -122.155,] 
+data4=data0[data0$longitude >= -122.155,] 
 
-fit.sph.OLS=variofit(vario2, ini.cov.pars=c(0.15,0.2),
+
+par(mfrow=c(1,1),mai=c(0.5,0.5,0.5,0.5)) 
+quilt.plot(data0$longitude, data0$latitude, res0) 
+US(add=T) 
+abline(v= c( -122.445, -122.300,-122.155),col="gray") # ablines at -99 and -97 longatude
+
+
+text(-122.56,  37.6, label=nrow(data1), col="black") 
+text(-122.4,   37.6, label=nrow(data2), col="black") 
+text(-122.21,  37.6, label=nrow(data3), col="black") 
+text(-122.12,  37.6, label=nrow(data4), col="black") 
+print(
+  cat(" Number of cases within each subgroup:", '\n',
+      "data1 = ", nrow(data1) ,'\n',
+      "data2 = ", nrow(data2) ,'\n',
+      "data3 = ", nrow(data3) ,'\n',
+      "data4 = ", nrow(data4) ,'\n'
+      )
+  )
+#nrow(data1);nrow(data2);nrow(data3);nrow(data4)
+data3$total_bedrooms  + 
+  data3$median_income +
+  data3$housing_median_age +
+  data3$longitude+ 
+  data3$latitude
+
+
+
+###-------- variograms of the subgroups-----------------------------
+
+vario1=variog(coords=cbind(data1$longitude, data1$latitude), 
+              data=log(data1$median_house_value), 
+              trend=trend.spatial(~data1$total_bedrooms  + 
+                                    data1$median_income +
+                                    data1$housing_median_age +
+                                    data1$longitude+ 
+                                    data1$latitude
+                                  )) 
+plot(vario1)
+
+vario2=variog(coords=cbind(data2$longitude, data2$latitude), 
+              data=log(data2$median_house_value), 
+              trend=trend.spatial(~data2$total_bedrooms  + 
+                                    data2$median_income +
+                                    data2$housing_median_age +
+                                    data2$longitude+ 
+                                    data2$latitude
+                                  )) 
+plot(vario2)
+
+vario3=variog(coords=cbind(data3$longitude, data3$latitude), 
+              data=log(data3$median_house_value), 
+              trend=trend.spatial(~data3$total_bedrooms  + 
+                                    data3$median_income +
+                                    data3$housing_median_age +
+                                    data3$longitude+ 
+                                    data3$latitude
+                                  ))
+plot(vario3)
+
+vario4=variog(coords=cbind(data4$longitude, data4$latitude), 
+              data=log(data4$median_house_value), 
+              trend=trend.spatial(~data4$total_bedrooms  + 
+                                    data4$median_income +
+                                    data4$housing_median_age +
+                                    data4$longitude+ 
+                                    data4$latitude
+                                  )) 
+plot(vario4)
+
+
+par(mfrow=c(1,4),mai=c(0.5,0.5,0.5,0.5)) 
+plot(vario1,ylim=c(0,1.1),main = "Data1") 
+plot(vario2,ylim=c(0,1.1), main= "Data2") 
+plot(vario3,ylim=c(0,1.1), main= "Data3") 
+plot(vario4,ylim=c(0,1.1), main= "Data4") 
+par(mfrow=c(1,1))
+
+
+###------ variofit() of the subgroups-------------------------------------
+
+# might want to change the initial parameters ......
+
+fit1=variofit(vario1, ini.cov.pars=c(0.1,0.1),
                       weights = 'equal',
-                     cov.model = "spherical") ## try many other models 
-fit.sph.OLS
-#variofit: model parameters estimated by OLS (ordinary least squares):
-#  covariance model is: spherical
-#parameter estimates:
-#  tausq sigmasq     phi 
-#0.0539  0.0761  0.1027 
-#Practical Range with cor=0.05 for asymptotic range: 0.1026624
-#variofit: minimised sum of squares = 0.0019
+                      cov.model = "exponential")
+fit1
+
+
+fit2=variofit(vario2, ini.cov.pars=c(0.2,0.2),
+              weights = 'equal',
+              cov.model = "exponential")
+fit2
+
+
+fit3=variofit(vario3, ini.cov.pars=c(0.4,0.4),
+              weights = 'equal',
+              cov.model = "exponential")
+fit3  # no spatial dependence? weak spatial dependence 
+
+fit4=variofit(vario2, ini.cov.pars=c(0.1,0.4),
+              weights = 'equal',
+              cov.model = "exponential")
+fit4
+
+print(list(fit1, fit2, fit3, fit4))
 
 
 
-ols <- variofit(vario1,
-                weights = "equal",
-                fix.kappa=FALSE, 
-                cov.model = "spherical",
-                ini.cov.pars=c(0.15,0.2)) 
+#------- kriging the local stay 
 
+#-- function
 
-#PARAMETER ESTIMATION FUNCTION FOR OLS
-
-D <- rdist.earth(locc,miles = T) # distance
-
-#COVARIANCE PARAMETER ESTIMATES FROM OLS variofit()
-alpha = 0.0576
-beta  = 0.0627
-delta = 0.0458
+krig=function(data, data.v, par){ 
+  n=dim(data)[1] 
+  N=dim(data.v)[1] 
+  alpha=par[1] 
+  beta=par[2] 
+  delta=par[3] 
+  M=cbind(rep(1,n), data$total_bedrooms+data$median_income+data$housing_median_age+data$longitude+data$latitude) 
+  m=t(cbind(rep(1,N), data$total_bedrooms+data$median_income+data$housing_median_age+data$longitude+data$latitude)) 
+  D=rdist(cbind(data$longitude, data$latitude)) 
+  d=rdist(cbind(data$longitude, data$latitude), cbind(data.v$longitude, data.v$latitude)) 
+  S=alpha*exp(-D/beta) 
+  diag(S)=diag(S)+delta 
   
-M <- cbind(rep(1, dim(D)[1]), x1,x2,x3,x4,x5)      # design matrix
-S = alpha*(1-((3*D)/(2*beta))+((D**3)/(2*(beta**3))))
-diag(S) = diag(S) + delta                         # nugget
-Z = matrix(res0, ncol = 1)
+  k=alpha*exp(-d/beta) 
   
-B_estimate = solve(t(M) %*% (solve(S) %*% M) ) %*% t(M)%*%solve(S) %*% Z
-B_estimate
+  lambda = (solve(S) - solve(S) %*% M %*% solve(t(M) %*% solve(S) %*% M) %*% t(M) %*% solve(S) ) %*% k + solve(S) %*% M %*% solve(t(M) %*% solve(S) %*% M) %*% m 
+  krig=t(lambda) %*% log(data$median_house_value) 
+  
+  return(krig) 
+} 
 
-# ----------------WLS
-
-fit.sph.WLS=variofit(vario2, ini.cov.pars=c(0.15,0.2),
-                      weights = 'npairs',
-                     cov.model = "spherical") ## try many other models 
-fit.sph.WLS
-#variofit: model parameters estimated by WLS (weighted least squares):
-#  covariance model is: spherical
-#parameter estimates:
-#  tausq sigmasq     phi 
-#0.0540  0.0846  0.1156 
-#Practical Range with cor=0.05 for asymptotic range: 0.1155594
-#variofit: minimised weighted sum of squares = 64.0742
-
-#--------------- REML
-
-fit.sph.reml=likfit(coords=locc, 
-                    data=y, 
-                    trend=trend.spatial(~x1+x2+x3+x4+x5), # mean structure
-                    lik.method = "REML",
-                    cov.model = "spherical",
-                    ini.cov.pars=c(0.15,0.2)) 
-fit.sph.reml
-#likfit: estimated model parameters:
-#  beta0       beta1       beta2       beta3       beta4       beta5       tausq     sigmasq         phi 
-#"-129.9206" "   0.0002" "   0.1412" "   0.0020" "  -1.3486" "  -0.6180" "   0.0779" "   0.0664" "   0.3501" 
-#Practical Range with cor=0.05 for asymptotic range: 0.3501326
-#likfit: maximised log-likelihood = -326.6
+# ----   results 
 
 
-#----------- with data =  y_res, notice the paramerter are diff, but the max log-lik is the same
-#likfit: estimated model parameters:
-#  beta0      beta1      beta2      beta3      beta4      beta5      tausq    sigmasq        phi 
-#"-25.3030" "  0.0000" " -0.0120" " -0.0009" " -0.1797" "  0.0909" "  0.0779" "  0.0664" "  0.3501" 
-#Practical Range with cor=0.05 for asymptotic range: 0.3501326
-#likfit: maximised log-likelihood = -326.6
+## kriging with isotropic fit 
+krig0 = krig(data0, data.v, c( 0.0542, 0.0186, 0.0479)) 
 
 
 
+#--------------------------------------------------------change the range 
+## kriging over region 1 
+data.v1=data.v[data.v$longitude< -99,] 
+krig2.1=krig(data1,data.v1, c(0.1878, 0.0624, 0.0324)) 
+
+## kriging over region 2 
+data.v2=data.v[data.v$longitude>= -99 & data.v$longitude< -97,] 
+krig2.2=krig(data2,data.v2, c(0.4582, 0.0623, 0.0614)) 
+
+## kriging over region 3 
+data.v2=data.v[data.v$longitude>= -99 & data.v$longitude< -97,] 
+krig2.2=krig(data2,data.v2, c(0.4582, 0.0623, 0.0614))
+
+## kriging over region 4 
+data.v3=data.v[data.v$longitude>= -97,] 
+krig2.3=krig(data3,data.v3, c(0.4930, 0.0399, 0.3025)) 
 
 
 
+par(mfrow=c(1,1),mai=c(0.5,0.5,0.5,0.5)) 
+plot(data0$longitude, data0$latitude, pch=20) 
+US(add=T) 
+abline(v=c(-99,-97),col="gray") 
 
-
-
-
-
-
-
-
-
-
-
-
+points(data.v1$longitude, data.v1$latitude, col=2) 
+points(data.v2$longitude, data.v2$latitude, col=3) 
+points(data.v3$longitude, data.v3$latitude, col=4) 
+par(mfrow=c(1,2),mai=c(0.5,0.8,0.5,0.8)) 
