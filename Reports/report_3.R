@@ -416,7 +416,7 @@ krig2.4 = krig(data4,data.v4, c(0.0434,  0.0189, 0.0674 ))
 
 # plotting the kriging 
 par(mfrow=c(1,1)) 
-plot(data0$longitude, data0$latitude, pch=20) 
+plot(data0$longitude, data0$latitude, pch=20, main = "EXPO OLS") 
 US(add=T) 
 abline(v=c(-122.445,-122.300,-122.155),col="gray") 
 
