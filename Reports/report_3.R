@@ -2,8 +2,8 @@ library(readxl)
 load('C:/Users/nsara/Documents/Grad_School/MATH 6397/report/data1.RData')
 dim(data1)
 library(fields)
-library(gstat) 
-library(sp) 
+#library(gstat) 
+#library(sp) 
 library(geoR)
 
 #---------------------- Data Cleaning ------------------------------------------
@@ -27,13 +27,20 @@ nrow(sample_kriging_data)
 
 loc = cbind(sample_data$longitude, sample_data$latitude)
 y      <- log(sample_data$median_house_value) #value at loc
-y_res  <- res0
 x1     <- sample_data$total_bedrooms 
 x2     <- sample_data$median_income  
 x3     <- sample_data$housing_median_age 
 x4     <- sample_data$longitude
 x5     <- sample_data$latitude
 
+# linear regression model from report 1
+fit0 = lm(log(median_house_value) ~ total_bedrooms+ 
+            median_income+housing_median_age + 
+            longitude+latitude,  data = sample_data)
+summary(fit0)
+res0 = fit0$residuals
+
+# spatial map
 quilt.plot(sample_data$longitude, sample_data$latitude, y)
 US(add=T) 
 
@@ -44,23 +51,28 @@ summary(fit0)
 res0 = fit0$residuals
 summary(res0)
 
-#plot(res0)
+plot(res0)
 quilt.plot(sample_data$longitude, sample_data$latitude, res0)
 US(add=T) 
 
 #------------------- variogram----------------
-vario0 = variog(coords=loc,
-                     data=y, 
-                     trend=trend.spatial(~x1+x2+x3+x4+x5)) 
+vario0  = variog(coords=loc,
+                 data=res0, 
+                 trend=trend.spatial(~x1+x2+x3+x4+x5),
+                 max.dist = 0.6) 
 plot(vario0) 
 
+# expodentail 
+plot(vario0, main = "EXP" ) 
+lines.variomodel(cov.model = "exp", 
+                 cov.pars = c(0.1,0.05), 
+                 nugget = 0.01, 
+                 max.dist = 0.6,
+                 lwd = 3)
+
 # ------------------ OLS ------------------------------------------------
-zz=rnorm(dim(sample_data)[1], 0,0.1) 
-sample_data$longitudee=sample_data$longitude+zz 
-locc = cbind(sample_data$longitudee, sample_data$latitude)
 
-
-fit.expo.OLS=variofit(vario0, ini.cov.pars=c(0.15,0.2),
+fit.expo.OLS=variofit(vario0, ini.cov.pars=c(0.15,0.05),
                       weights = 'equal',
                       cov.model = "exponential")
 fit.expo.OLS
@@ -68,72 +80,65 @@ fit.expo.OLS
 #  covariance model is: exponential
 #parameter estimates:
 #  tausq sigmasq     phi 
-#0.0479  0.0542  0.0186 
-#Practical Range with cor=0.05 for asymptotic range: 0.05568734
+#0.0474  0.0594  0.0210 
+#Practical Range with cor=0.05 for asymptotic range: 0.06277277
 #variofit: minimised sum of squares = 0.0017
 
-D <- rdist.earth(locc,miles = T) # distance
 
-alpha = 0.0542
-beta  = 0.0186
-delta = 0.0479
+set.seed(222)
+zz=rnorm(dim(sample_data)[1], 0, 0.001) 
+sample_data$longitudee=sample_data$longitude+zz 
+locc = cbind(sample_data$longitudee, sample_data$latitude)
+
+D <- rdist(locc) # distance
+
+alpha = 0.0594
+beta  = 0.0210
+delta = 0.0474
 
 M <- cbind(rep(1, dim(D)[1]), x1,x2,x3,x4,x5) # design matrix
 S <- alpha*exp(-D/beta)                       # covareiance matrix 
 diag(S) = diag(S) + delta                     # nugget
 Z = matrix(res0, ncol = 1)
 
-B_estimate = solve(t(M) %*% (solve(S) %*% M) ) %*%  t(M)%*%solve(S) %*% Z
-B_estimate
-print(round(B_estimate,5))
+B_estimate1 = solve(t(M) %*% (solve(S) %*% M) ) %*%  t(M)%*%solve(S) %*% Z
+print(round(B_estimate1,5))
 
--1.045835e+02
-x1  2.060834e-04
-x2  1.529699e-01
-x3  2.984820e-03
-x4 -1.168275e+00
-x5 -7.078880e-01
 
-# with res0
-3.412858e-02
-x1  8.190126e-07
-x2 -2.121486e-04
-x3  5.032516e-05
-x4  6.013972e-04
-x5  1.008981e-03
+48.62891
+x1 -0.00012
+x2 -0.06489
+x3 -0.00212
+x4  0.45398
+x5  0.19365
 
 ##---------- Kriging  --------------------------------------------------------- 
-res <- (lm(log(median_house_value) ~ total_bedrooms+ 
-             median_income+housing_median_age + 
-             longitude+latitude,  data = sample_data))$residuals
+res_krig <- (lm(log(median_house_value) ~ total_bedrooms+ 
+                  median_income+housing_median_age + 
+                  longitude+latitude,  data = sample_kriging_data))$residuals
+#res_krig = matrix(res_krig, ncol = 1)
 
-# 100 kirging data
-yk      <- log(sample_kriging_data$median_house_value) #value at loc
-k1     <- sample_kriging_data$total_bedrooms
-k2     <- sample_kriging_data$median_income  
-k3     <- sample_kriging_data$housing_median_age 
-k4     <- sample_kriging_data$longitude
-k5     <- sample_kriging_data$latitude
-
+hist(res_krig)
 # locations for selected data and kriging data
 locc = cbind(sample_data$longitude, sample_data$latitude)
 locc_k = cbind(sample_kriging_data$longitude, sample_kriging_data$latitude)
 
 # distance
-D <- rdist.earth(locc,miles = T) # distance b/t the selected data
-d = rdist.earth(locc,  locc_k, miles = T)         # distance b/t selected data and kriging data
+D <- rdist(locc)                  # distance b/t the selected data
+d <- rdist(locc,  locc_k)         # distance b/t selected data and kriging data
+
 
 # modify code below  
 M = cbind(rep(1, dim(D)[1]), x1,x2,x3,x4,x5) 
 m = t(cbind(rep(1,100), k1,k2,k3,k4,k5)) 
 
-Z = matrix(res, ncol = 1)       # data vector
+Z = matrix(res0, ncol = 1)       # data vector
 
 # -------------------------(my results)
 ######## exponential OLS
-alpha = 0.0542
-beta  = 0.0186
-delta = 0.0479
+alpha = 0.0594
+beta  = 0.0210
+delta = 0.0474
 
 S = alpha * exp(-D/beta)         # covariance matrix 
 diag(S) = diag(S)+delta          # add nugget 
@@ -145,33 +150,24 @@ krig.exp.ols = t(lambda) %*% Z
 dim(krig.exp.ols)
 
 
-plot(yk,krig.exp.ols)
 
-mse1=mean((krig.exp.ols-yk)^2)
+
+plot(res_krig, krig.exp.ols)
+lines(res_krig,res_krig) #y=x line 
+
+mse1=mean((krig.exp.ols-res_krig)^2)
 mse1 #in log form
-mae1=mean(abs(krig.exp.ols-yk))
+mae1=mean(abs(krig.exp.ols-res_krig))
 mae1
-lines(yk,yk) #y=x line not perfect predictions but good
 
 
 
-
-# with yk log
-> mse1=mean((krig.exp.ols-yk)^2)
+> mse1=mean((krig.exp.ols-res_krig)^2)
 > mse1 #in log form
-[1] 0.04423849
-> mae1=mean(abs(krig.exp.ols-yk))
+[1] 0.03133114
+> mae1=mean(abs(krig.exp.ols-res_krig))
 > mae1
-[1] 0.1524849
-
-
-# with res of the kriging
-> mse1=mean((krig.exp.ols-yk)^2)
-> mse1 #in log form
-[1] 152.5091
-> mae1=mean(abs(krig.exp.ols-yk))
-> mae1
-[1] 12.34164
+[1] 0.1226097
 
 
 
@@ -206,35 +202,62 @@ print(
       "data4 = ", nrow(data4) ,'\n'
       )
   )
+
 #nrow(data1);nrow(data2);nrow(data3);nrow(data4)
-data3$total_bedrooms  + 
-  data3$median_income +
-  data3$housing_median_age +
-  data3$longitude+ 
-  data3$latitude
+
+
+###-------- variograms of the subgroups-----------------------------
+res_krig_data1 <- (lm(log(median_house_value) ~ total_bedrooms+ 
+                  median_income+housing_median_age + 
+                  longitude+latitude,  data = data1))$residuals
 
 vario1=variog(coords=cbind(data1$longitude, data1$latitude), 
-              data=log(data1$median_house_value), 
+              data=res_krig_data1, 
               trend=trend.spatial(~data1$total_bedrooms  + 
                                     data1$median_income +
                                     data1$housing_median_age +
                                     data1$longitude+ 
                                     data1$latitude
-                                  )) 
+                                  ),
+              max.dist = 1) 
 plot(vario1)
+# expodentail 
+plot(vario1, main = "EXP" ) 
+lines.variomodel(cov.model = "exp", 
+                 cov.pars = c(0.04,0.05), 
+                 nugget = 0.005, 
+                 max.dist = 1,
+                 lwd = 3)
+
+
+res_krig_data2 <- (lm(log(median_house_value) ~ total_bedrooms+ 
+                        median_income+housing_median_age + 
+                        longitude+latitude,  data = data2))$residuals
 
 vario2=variog(coords=cbind(data2$longitude, data2$latitude), 
-              data=log(data2$median_house_value), 
+              data=res_krig_data2, max.dist = 1,
               trend=trend.spatial(~data2$total_bedrooms  + 
                                     data2$median_income +
                                     data2$housing_median_age +
                                     data2$longitude+ 
-                                    data2$latitude
-                                  )) 
+                                    data2$latitude))
 plot(vario2)
+plot(vario2, main = "EXP" ) 
+lines.variomodel(cov.model = "exp", 
+                 cov.pars = c(0.10,0.05), 
+                 nugget = 0.0005, 
+                 max.dist = 1,
+                 lwd = 3)
+
+
+
+res_krig_data3 <- (lm(log(median_house_value) ~ total_bedrooms+ 
+                        median_income+housing_median_age + 
+                        longitude+latitude,  data = data3))$residuals
 
 vario3=variog(coords=cbind(data3$longitude, data3$latitude), 
-              data=log(data3$median_house_value), 
+              data=res_krig_data3, 
+              max.dist = 0.45,
               trend=trend.spatial(~data3$total_bedrooms  + 
                                     data3$median_income +
                                     data3$housing_median_age +
@@ -242,9 +265,19 @@ vario3=variog(coords=cbind(data3$longitude, data3$latitude),
                                     data3$latitude
                                   ))
 plot(vario3)
+plot(vario3, main = "EXP" ) 
+lines.variomodel(cov.model = "exp", 
+                 cov.pars = c(0.10,0.10), 
+                 nugget = 0.0005, 
+                 max.dist = 1,
+                 lwd = 3)
+
+res_krig_data4 <- (lm(log(median_house_value) ~ total_bedrooms+ 
+                        median_income+housing_median_age + 
+                        longitude+latitude,  data = data4))$residuals
 
 vario4=variog(coords=cbind(data4$longitude, data4$latitude), 
-              data=log(data4$median_house_value), 
+              data=res_krig_data4, max.dist = 0.45,
               trend=trend.spatial(~data4$total_bedrooms  + 
                                     data4$median_income +
                                     data4$housing_median_age +
@@ -252,24 +285,74 @@ vario4=variog(coords=cbind(data4$longitude, data4$latitude),
                                     data4$latitude
                                   )) 
 plot(vario4)
+plot(vario4, main = "EXP" ) 
+lines.variomodel(cov.model = "exp", 
+                 cov.pars = c(0.05,0.05), 
+                 nugget = 0.005, 
+                 max.dist = 1,
+                 lwd = 3)
 
 
-par(mfrow=c(1,4),mai=c(0.5,0.5,0.5,0.5)) 
-plot(vario1,ylim=c(0,1.1),main = "Data1") 
-plot(vario2,ylim=c(0,1.1), main= "Data2") 
-plot(vario3,ylim=c(0,1.1), main= "Data3") 
-plot(vario4,ylim=c(0,1.1), main= "Data4") 
+
+#---plot-----------------------------------------------------
+
+par(mfrow=c(2,2)) 
+plot(vario1, main = "Data1")
+lines.variomodel(cov.model = "exp", 
+                 cov.pars = c(0.04,0.05), 
+                 nugget = 0.0005, 
+                 max.dist = 1,
+                 lwd = 3)
+
+plot(vario2, main= "Data2") 
+lines.variomodel(cov.model = "exp", 
+                 cov.pars = c(0.10,0.05), 
+                 nugget = 0.0005, 
+                 max.dist = 1,
+                 lwd = 3)
+plot(vario3, main= "Data3")
+lines.variomodel(cov.model = "exp", 
+                 cov.pars = c(0.10,0.10), 
+                 nugget = 0.0005, 
+                 max.dist = 1,
+                 lwd = 3)
+plot(vario4, main= "Data4") 
+lines.variomodel(cov.model = "exp", 
+                 cov.pars = c(0.05,0.05), 
+                 nugget = 0.005, 
+                 max.dist = 1,
+                 lwd = 3)
 par(mfrow=c(1,1))
 
 
+###------ variofit() of the subgroups-------------------------------------
+
+# might want to change the initial parameters ......
+
+fit1=variofit(vario1, ini.cov.pars=c(0.04,0.1),
+                      weights = 'equal',
+                      cov.model = "exponential")
+fit1
+
+
+fit2=variofit(vario2, ini.cov.pars=c(0.1,0.1),
+              weights = 'equal',
+              cov.model = "exponential")
+fit2
+
+
+fit3=variofit(vario3, ini.cov.pars=c(0.1,0.1),
+              weights = 'equal',
+              cov.model = "exponential")
+fit3  # no spatial dependence? weak spatial dependence 
+
+fit4=variofit(vario2, ini.cov.pars=c(0.05,0.05),
+              weights = 'equal',
+              cov.model = "exponential")
+fit4
+
+print(list(fit1, fit2, fit3, fit4))
 
 
 
-
-
-
-
-
-
-
-
+#------- kriging the local stay 
