@@ -1,0 +1,198 @@
+library(readxl)
+load("~/MATH 6397/report/data1.RData")
+dim(data1)
+library(fields)
+library(gstat) 
+library(sp) 
+library(geoR)
+
+#---------------------- Data Cleaning ------------------------------------------
+
+general_data = data1 #Create a dataframe with the loaded dataset
+nrow(general_data) #Check the number of rows of the dataset
+sum(is.na(general_data)) # have about 20 rows with at least one missing value
+colSums(is.na(general_data))  # check to see what columns have the missing values 
+
+new_data <- na.omit(general_data) #create a new dataset without missing values
+nrow(new_data) #check number of rows of new dataset without missing values
+sum(is.na(new_data)) #check to see if all missing values have been removed
+
+set.seed(222)
+# 1500 sample data
+sample_data = new_data[sample(1:dim(new_data)[1],1500), ] #create a sample dataset of 1500 rows
+nrow(sample_data)#check to see if sample dataset has 1500 rows
+# 100 kriging data 
+sample_kriging_data = new_data[sample(setdiff(1:dim(new_data)[1], sample_data),100),] # 100 location for kriging
+nrow(sample_kriging_data)
+
+
+#------- geoR
+variog()
+
+
+
+
+
+
+loc = cbind(sample_data$longitude, sample_data$latitude)
+
+y      <- sample_data$median_house_value
+y_log  <- log(sample_data$median_house_value) #value at loc
+y_scaled <- scale(sample_data$median_house_value)
+
+x1     <- sample_data$total_bedrooms 
+x2     <- sample_data$median_income  
+x3     <- sample_data$housing_median_age 
+x4     <- sample_data$longitude
+x5     <- sample_data$latitude
+
+quilt.plot(sample_data$longitude, sample_data$latitude, y)
+US(add=T) 
+
+
+#----- linear regression model from report 1
+fit0 = lm(y ~ x1+x2+x3+x4+x5,  data = sample_data)
+summary(fit0)
+res0 = fit0$residuals
+summary(res0)
+
+
+fit_log = lm(y_log~ x1+x2+x3+x4+x5,  data = sample_data)
+summary(fit_log)
+res_log = fit_log$residuals
+summary(res_log)
+
+fit_scaled = lm(y_scaled ~ x1+x2+x3+x4+x5,  data = sample_data)
+summary(fit_scaled)
+res_scaled = fit_scaled$residuals
+summary(res_scaled)
+
+# res0
+# res_log
+par(mfrow=c(1,2))
+quilt.plot(sample_data$longitude, sample_data$latitude, res_log)
+US(add=T) 
+quilt.plot(sample_data$longitude, sample_data$latitude, res0)
+US(add=T) 
+par(mfrow=c(1,1))
+quilt.plot(sample_data$longitude, sample_data$latitude, res_scaled)
+US(add=T) 
+par(mfrow=c(1,1))
+
+
+
+#---histogram
+par(mfrow=c(2,2))
+hist(sample_data$median_house_value, main="regular")
+hist(log(sample_data$median_house_value), main = "log")
+hist(res_log, main = "res log")
+hist(res0, main = "res")
+par(mfrow=c(1,1))
+hist(res_scaled)
+
+
+# variogram
+par(mfrow=c(2,2))
+
+vario_regular = variog(coords=loc,
+                data=sample_data$median_house_value, 
+                trend=trend.spatial(~x1+x2+x3+x4+x5),
+                max.dist = 0.4) 
+plot(vario_regular, main = "sample_data$median_house_value")
+
+vario_log = variog(coords=loc,
+                       data=log(sample_data$median_house_value), 
+                       trend=trend.spatial(~x1+x2+x3+x4+x5)) 
+plot(vario_log, main = "log(sample_data$median_house_value)")
+
+
+vario_res_log = variog(coords=loc,
+                       data=res_log, 
+                       trend=trend.spatial(~x1+x2+x3+x4+x5)) 
+plot(vario_res_log, main = "res(log(y))")
+
+
+vario_res0 = variog(coords=loc,
+                       data=res0, 
+                       trend=trend.spatial(~x1+x2+x3+x4+x5)) 
+plot(vario_res0, main= "res(y)")
+
+
+par(mfrow=c(1,1))
+
+vario_res_log = variog(coords=loc,
+                       data=res_log, 
+                       trend=trend.spatial(~x1+x2+x3+x4+x5),
+                       max.dist = 0.5) 
+plot(vario_res_log, main = "res(log(y))")
+
+vario_res_scaled = variog(coords=loc,
+                          data=res_scaled, 
+                          trend=trend.spatial(~x1+x2+x3+x4+x5),
+                          max.dist = 0.4)
+plot(vario_res_scaled, main="res_scaled")
+
+#------------------- variogram----------------
+vario0 = variog(coords=loc,
+                data=y, 
+                trend=trend.spatial(~x1+x2+x3+x4+x5)) 
+plot(vario0) 
+
+# ------------------ OLS ------------------------------------------------
+zz=rnorm(dim(sample_data)[1], 0,0.1) 
+sample_data$longitudee=sample_data$longitude+zz 
+locc = cbind(sample_data$longitudee, sample_data$latitude)
+
+
+fit.expo.OLS=variofit(res_log, ini.cov.pars=c(0.1,0.20),
+                      weights = 'equal',
+                      cov.model = "exponential")
+fit.expo.OLS
+
+#ignore
+#variofit: model parameters estimated by OLS (ordinary least squares):
+#  covariance model is: exponential
+#parameter estimates:
+#  tausq sigmasq     phi 
+#0.0479  0.0542  0.0186 
+#Practical Range with cor=0.05 for asymptotic range: 0.05568734
+#variofit: minimised sum of squares = 0.0017
+
+D <- rdist(locc) # distance
+#ignore
+alpha = 0.1902 #0.0595  
+beta  = 0.0186 #0.0211 
+delta = 0.2086 #0.0473  
+
+M <- cbind(rep(1, dim(D)[1]), x1,x2,x3,x4,x5) # design matrix
+S <- alpha*exp(-D/beta)                       # covareiance matrix 
+diag(S) = diag(S) + delta                     # nugget
+Z = matrix(res_log, ncol = 1)
+
+B_estimate1 = solve(t(M) %*% (solve(S) %*% M) ) %*%  t(M)%*%solve(S) %*% Z
+B_estimate1
+print(round(B_estimate1,5))
+
+
+
+### OLS sphirical 
+
+fit.sph.OLS=variofit(vario_res_scaled, ini.cov.pars=c(0.4,0.1),
+                      weights = 'equal',
+                      cov.model = "spherical")
+fit.sph.OLS
+
+alpha = 0.1853 #0.0586  
+beta  = 0.0456 #0.0490 
+delta = 0.2126 #0.0480  
+
+M <- cbind(rep(1, dim(D)[1]), x1,x2,x3,x4,x5) # design matrix
+S = alpha*(1-((3*D)/(2*beta))+((D**3)/(2*(beta**3)))) 
+diag(S) = diag(S) + delta                  # nugget
+z=matrix(res_log, ncol = 1)
+
+B_estimate4=solve(t(M) %*% (solve(S) %*% M)) %*% t(M) %*% solve(S)%*% z
+print(B_estimate4)
+print(round(B_estimate4,5))
+
+
