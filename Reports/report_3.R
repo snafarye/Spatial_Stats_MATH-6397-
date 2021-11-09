@@ -433,14 +433,18 @@ par(mfrow=c(1,2))
 
 quilt.plot(data.v$longitude, data.v$latitude, lm(log(median_house_value) ~ total_bedrooms+ 
                                                    median_income+housing_median_age + 
-                                                   longitude+latitude,  data = data.v)$residuals - krig0) 
+                                                   longitude+latitude,  data = data.v)$residuals - krig0,
+           main= "overall") 
 US(add=T) 
-data.vv=rbind(data.v1, data.v2, data.v3) 
-krig.vv=c(krig2.1, krig2.2, krig2.3) 
+data.vv=rbind(data.v1, data.v2, data.v3, data.v4) 
+krig.vv=c(krig2.1, krig2.2, krig2.3, krig2.4) 
 quilt.plot(data.vv$longitude, data.vv$latitude, lm(log(median_house_value) ~ total_bedrooms+ 
                                                      median_income+housing_median_age + 
-                                                     longitude+latitude,  data = data.vv)$residuals - krig.vv) 
-US(add=T) 
+                                                     longitude+latitude,  data = data.vv)$residuals - krig.vv,
+           main = "local stationarity") 
+US(add=T)
+
+
 par(mfrow=c(1,3),mai=c(0.5,0.5,0.5,0.5)) 
 a=lm(log(median_house_value) ~ total_bedrooms+ 
        median_income+housing_median_age + 
