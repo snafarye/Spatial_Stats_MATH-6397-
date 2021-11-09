@@ -424,4 +424,40 @@ points(data.v1$longitude, data.v1$latitude, col=2, lwd = 3)
 points(data.v2$longitude, data.v2$latitude, col=3, lwd = 3) 
 points(data.v3$longitude, data.v3$latitude, col=4, lwd = 3) 
 points(data.v4$longitude, data.v4$latitude, col=5, lwd = 3)
+
+
+
+
+# --------checking errors v true values----------------------------- 
 par(mfrow=c(1,2))
+
+quilt.plot(data.v$longitude, data.v$latitude, lm(log(median_house_value) ~ total_bedrooms+ 
+                                                   median_income+housing_median_age + 
+                                                   longitude+latitude,  data = data.v)$residuals - krig0) 
+US(add=T) 
+data.vv=rbind(data.v1, data.v2, data.v3) 
+krig.vv=c(krig2.1, krig2.2, krig2.3) 
+quilt.plot(data.vv$longitude, data.vv$latitude, lm(log(median_house_value) ~ total_bedrooms+ 
+                                                     median_income+housing_median_age + 
+                                                     longitude+latitude,  data = data.vv)$residuals - krig.vv) 
+US(add=T) 
+par(mfrow=c(1,3),mai=c(0.5,0.5,0.5,0.5)) 
+a=lm(log(median_house_value) ~ total_bedrooms+ 
+       median_income+housing_median_age + 
+       longitude+latitude,  data = data.v)$residuals - krig0 
+b=lm(log(median_house_value) ~ total_bedrooms+ 
+       median_income+housing_median_age + 
+       longitude+latitude,  data = data.vv)$residuals-krig.vv 
+
+
+boxplot(cbind(a,b)) 
+plot(lm(log(median_house_value) ~ total_bedrooms+ 
+          median_income+housing_median_age + 
+          longitude+latitude,  data = data.v)$residuals , krig0,pch=20,xlab="truth",ylab="krigged") 
+points(lm(log(median_house_value) ~ total_bedrooms+ 
+            median_income+housing_median_age + 
+            longitude+latitude,  data = data.vv)$residuals, krig.vv,col=2,pch=3, lwd = 2) 
+hist(a, freq=FALSE,main="",nclass=30,xlab="error") 
+hist(b, freq=FALSE, add=T, border="red",nclass=30,col=NULL, lwd = 2) 
+
+
