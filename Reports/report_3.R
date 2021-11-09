@@ -355,4 +355,73 @@ print(list(fit1, fit2, fit3, fit4))
 
 
 
+
 #------- kriging the local stay 
+
+#-- function
+
+krig=function(data, data.v, par){ 
+  n=dim(data)[1] 
+  N=dim(data.v)[1] 
+  alpha=par[1] 
+  beta=par[2] 
+  delta=par[3] 
+  M=cbind(rep(1,n), data$total_bedrooms,data$median_income,data$housing_median_age,data$longitude,data$latitude) 
+  m=t(cbind(rep(1,N), data.v$total_bedrooms,data.v$median_income,data.v$housing_median_age,data.v$longitude,data.v$latitude)) 
+  D=rdist(cbind(data$longitude, data$latitude)) 
+  d=rdist(cbind(data$longitude, data$latitude), cbind(data.v$longitude, data.v$latitude)) 
+  S=alpha*exp(-D/beta) 
+  diag(S)=diag(S)+delta 
+  
+ 
+  
+  k=alpha*exp(-d/beta) 
+  
+  lambda=(solve(S) - solve(S) %*% M %*% solve(t(M) %*% solve(S) %*% M) %*% t(M) %*% solve(S) ) %*% k + solve(S) %*% M %*% solve(t(M) %*% solve(S) %*% M) %*% m
+  krig=t(lambda) %*% lm(log(median_house_value) ~ total_bedrooms+ 
+                          median_income+housing_median_age + 
+                          longitude+latitude,  data = data)$residuals
+  
+  return(krig) 
+} 
+
+
+# ----   results 
+
+
+## kriging with isotropic fit 
+krig0 = krig(data0, data.v, c( 0.0542, 0.0186, 0.0479)) 
+
+
+
+#--------------------------------------------------------change the range 
+
+
+## kriging over region 1 
+data.v1 = data.v[data.v$longitude< -122.445,] 
+krig2.1 = krig(data1,data.v1, c(0.0274,  0.0146, 0.0128)) 
+
+## kriging over region 2 
+data.v2 = data.v[data.v$longitude >= -122.445 & data.v$longitude <  -122.300,] 
+krig2.2 = krig(data2,data.v2, c(0.0435,  0.0189, 0.0674  )) 
+
+## kriging over region 3 
+data.v3 = data.v[data.v$longitude >=  -122.300 & data.v$longitude< -122.155,] 
+krig2.3 = krig(data3,data.v3, c(0.0621,  0.0123,0.0338 ))
+
+## kriging over region 4 
+data.v4 = data.v[data.v$longitude >= -122.155,] 
+krig2.4 = krig(data4,data.v4, c(0.0434,  0.0189, 0.0674 )) 
+
+
+# plotting the kriging 
+par(mfrow=c(1,1)) 
+plot(data0$longitude, data0$latitude, pch=20) 
+US(add=T) 
+abline(v=c(-122.445,-122.300,-122.155),col="gray") 
+
+points(data.v1$longitude, data.v1$latitude, col=2, lwd = 3) 
+points(data.v2$longitude, data.v2$latitude, col=3, lwd = 3) 
+points(data.v3$longitude, data.v3$latitude, col=4, lwd = 3) 
+points(data.v4$longitude, data.v4$latitude, col=5, lwd = 3)
+par(mfrow=c(1,2))
