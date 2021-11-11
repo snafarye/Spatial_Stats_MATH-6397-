@@ -178,38 +178,38 @@ data0  = sample_data
 data.v = sample_kriging_data
 
 range(sample_data$longitude)
-data1=data0[data0$longitude < -122.445,] 
-data2=data0[data0$longitude >= -122.445 & data0$longitude <  -122.300,]
-data3=data0[data0$longitude >=  -122.300 & data0$longitude< -122.155,] 
-data4=data0[data0$longitude >= -122.155,] 
 
+data1=data0[data0$longitude > -122.204,] 
+data2=data0[data0$longitude <= -122.204 & data0$longitude >  -122.397,]
+data3=data0[data0$longitude <=  -122.397 & data0$longitude> -122.59,]
 
-par(mfrow=c(1,1),mai=c(0.5,0.5,0.5,0.5)) 
+par(mfrow=c(1,1)) 
 quilt.plot(data0$longitude, data0$latitude, res0) 
 US(add=T) 
-abline(v= c( -122.445, -122.300,-122.155),col="gray") # ablines at -99 and -97 longatude
+abline(v= c( -122.204, -122.397),col="gray") # ablines at -99 and -97 longatude
 
 
-text(-122.56,  37.6, label=nrow(data1), col="black") 
-text(-122.4,   37.6, label=nrow(data2), col="black") 
-text(-122.21,  37.6, label=nrow(data3), col="black") 
-text(-122.12,  37.6, label=nrow(data4), col="black") 
+text(-122.5,  37.6, label=nrow(data1), col="black") 
+text(-122.3,  37.6, label=nrow(data2), col="black") 
+text(-122.1,  37.6, label=nrow(data3), col="black") 
+
 print(
   cat(" Number of cases within each subgroup:", '\n',
       "data1 = ", nrow(data1) ,'\n',
       "data2 = ", nrow(data2) ,'\n',
-      "data3 = ", nrow(data3) ,'\n',
-      "data4 = ", nrow(data4) ,'\n'
-      )
+      "data3 = ", nrow(data3) ,'\n'
   )
+)
 
-#nrow(data1);nrow(data2);nrow(data3);nrow(data4)
+
+zz=rnorm(dim(sample_data)[1], 0,0.1) 
+sample_data$longitudee=sample_data$longitude+zz 
+locc = cbind(sample_data$longitudee, sample_data$latitude)
 
 
-###-------- variograms of the subgroups-----------------------------
 res_krig_data1 <- (lm(log(median_house_value) ~ total_bedrooms+ 
-                  median_income+housing_median_age + 
-                  longitude+latitude,  data = data1))$residuals
+                        median_income+housing_median_age + 
+                        longitude+latitude,  data = data1))$residuals
 
 vario1=variog(coords=cbind(data1$longitude, data1$latitude), 
               data=res_krig_data1, 
@@ -218,16 +218,21 @@ vario1=variog(coords=cbind(data1$longitude, data1$latitude),
                                     data1$housing_median_age +
                                     data1$longitude+ 
                                     data1$latitude
-                                  ),
-              max.dist = 1) 
+              ),
+              max.dist = 0.6) 
 plot(vario1)
-# expodentail 
+
 plot(vario1, main = "EXP" ) 
 lines.variomodel(cov.model = "exp", 
-                 cov.pars = c(0.04,0.05), 
+                 cov.pars = c(0.08,0.02), 
                  nugget = 0.005, 
-                 max.dist = 1,
+                 max.dist = 0.6,
                  lwd = 3)
+
+fit1=variofit(vario1, ini.cov.pars=c(0.08,0.02),
+              weights = 'equal',
+              cov.model = "exponential")
+fit1
 
 
 res_krig_data2 <- (lm(log(median_house_value) ~ total_bedrooms+ 
@@ -235,7 +240,7 @@ res_krig_data2 <- (lm(log(median_house_value) ~ total_bedrooms+
                         longitude+latitude,  data = data2))$residuals
 
 vario2=variog(coords=cbind(data2$longitude, data2$latitude), 
-              data=res_krig_data2, max.dist = 1,
+              data=res_krig_data2, max.dist = 0.6,
               trend=trend.spatial(~data2$total_bedrooms  + 
                                     data2$median_income +
                                     data2$housing_median_age +
@@ -245,11 +250,14 @@ plot(vario2)
 plot(vario2, main = "EXP" ) 
 lines.variomodel(cov.model = "exp", 
                  cov.pars = c(0.10,0.05), 
-                 nugget = 0.0005, 
+                 nugget = 0.01, 
                  max.dist = 1,
                  lwd = 3)
 
-
+fit2=variofit(vario2, ini.cov.pars=c(0.1,0.05),
+              weights = 'equal',
+              cov.model = "exponential")
+fit2
 
 res_krig_data3 <- (lm(log(median_house_value) ~ total_bedrooms+ 
                         median_income+housing_median_age + 
@@ -257,104 +265,26 @@ res_krig_data3 <- (lm(log(median_house_value) ~ total_bedrooms+
 
 vario3=variog(coords=cbind(data3$longitude, data3$latitude), 
               data=res_krig_data3, 
-              max.dist = 0.45,
+              max.dist = 0.39,
               trend=trend.spatial(~data3$total_bedrooms  + 
                                     data3$median_income +
                                     data3$housing_median_age +
                                     data3$longitude+ 
                                     data3$latitude
-                                  ))
+              ))
 plot(vario3)
 plot(vario3, main = "EXP" ) 
 lines.variomodel(cov.model = "exp", 
-                 cov.pars = c(0.10,0.10), 
-                 nugget = 0.0005, 
-                 max.dist = 1,
-                 lwd = 3)
-
-res_krig_data4 <- (lm(log(median_house_value) ~ total_bedrooms+ 
-                        median_income+housing_median_age + 
-                        longitude+latitude,  data = data4))$residuals
-
-vario4=variog(coords=cbind(data4$longitude, data4$latitude), 
-              data=res_krig_data4, max.dist = 0.45,
-              trend=trend.spatial(~data4$total_bedrooms  + 
-                                    data4$median_income +
-                                    data4$housing_median_age +
-                                    data4$longitude+ 
-                                    data4$latitude
-                                  )) 
-plot(vario4)
-plot(vario4, main = "EXP" ) 
-lines.variomodel(cov.model = "exp", 
-                 cov.pars = c(0.05,0.05), 
+                 cov.pars = c(0.08,0.05), 
                  nugget = 0.005, 
-                 max.dist = 1,
+                 max.dist = 0.39,
                  lwd = 3)
 
 
-
-#---plot-----------------------------------------------------
-
-par(mfrow=c(2,2)) 
-plot(vario1, main = "Data1")
-lines.variomodel(cov.model = "exp", 
-                 cov.pars = c(0.04,0.05), 
-                 nugget = 0.0005, 
-                 max.dist = 1,
-                 lwd = 3)
-
-plot(vario2, main= "Data2") 
-lines.variomodel(cov.model = "exp", 
-                 cov.pars = c(0.10,0.05), 
-                 nugget = 0.0005, 
-                 max.dist = 1,
-                 lwd = 3)
-plot(vario3, main= "Data3")
-lines.variomodel(cov.model = "exp", 
-                 cov.pars = c(0.10,0.10), 
-                 nugget = 0.0005, 
-                 max.dist = 1,
-                 lwd = 3)
-plot(vario4, main= "Data4") 
-lines.variomodel(cov.model = "exp", 
-                 cov.pars = c(0.05,0.05), 
-                 nugget = 0.005, 
-                 max.dist = 1,
-                 lwd = 3)
-par(mfrow=c(1,1))
-
-
-###------ variofit() of the subgroups-------------------------------------
-
-# might want to change the initial parameters ......
-
-fit1=variofit(vario1, ini.cov.pars=c(0.04,0.1),
-                      weights = 'equal',
-                      cov.model = "exponential")
-fit1
-
-
-fit2=variofit(vario2, ini.cov.pars=c(0.1,0.1),
+fit3=variofit(vario3, ini.cov.pars=c(0.08,0.05),
               weights = 'equal',
               cov.model = "exponential")
-fit2
-
-
-fit3=variofit(vario3, ini.cov.pars=c(0.1,0.1),
-              weights = 'equal',
-              cov.model = "exponential")
-fit3  # no spatial dependence? weak spatial dependence 
-
-fit4=variofit(vario2, ini.cov.pars=c(0.05,0.05),
-              weights = 'equal',
-              cov.model = "exponential")
-fit4
-
-print(list(fit1, fit2, fit3, fit4))
-
-
-
+fit3 
 
 #------- kriging the local stay 
 
@@ -398,32 +328,29 @@ krig0 = krig(data0, data.v, c( 0.0542, 0.0186, 0.0479))
 
 
 ## kriging over region 1 
-data.v1 = data.v[data.v$longitude< -122.445,] 
-krig2.1 = krig(data1,data.v1, c(0.0274,  0.0146, 0.0128)) 
+data.v1 = data.v[data.v$longitude< -122.204,] 
+#krig2.1 = krig(data1,data.v1, c(0.0274,  0.0146, 0.0128)) 
 
 ## kriging over region 2 
-data.v2 = data.v[data.v$longitude >= -122.445 & data.v$longitude <  -122.300,] 
-krig2.2 = krig(data2,data.v2, c(0.0435,  0.0189, 0.0674  )) 
+data.v2 = data.v[data.v$longitude >= -122.204 & data.v$longitude <  -122.397,] 
+#krig2.2 = krig(data2,data.v2, c(0.0435,  0.0189, 0.0674  )) 
 
 ## kriging over region 3 
-data.v3 = data.v[data.v$longitude >=  -122.300 & data.v$longitude< -122.155,] 
-krig2.3 = krig(data3,data.v3, c(0.0621,  0.0123,0.0338 ))
+data.v3 = data.v[data.v$longitude >=  -122.397 & data.v$longitude< -122.59,] 
+#krig2.3 = krig(data3,data.v3, c(0.0621,  0.0123,0.0338 ))
 
-## kriging over region 4 
-data.v4 = data.v[data.v$longitude >= -122.155,] 
-krig2.4 = krig(data4,data.v4, c(0.0434,  0.0189, 0.0674 )) 
 
 
 # plotting the kriging 
 par(mfrow=c(1,1)) 
 plot(data0$longitude, data0$latitude, pch=20, main = "EXPO OLS") 
 US(add=T) 
-abline(v=c(-122.445,-122.300,-122.155),col="gray") 
+abline(v=c(-122.204,-122.397,-122.59),col="gray") 
 
 points(data.v1$longitude, data.v1$latitude, col=2, lwd = 3) 
 points(data.v2$longitude, data.v2$latitude, col=3, lwd = 3) 
 points(data.v3$longitude, data.v3$latitude, col=4, lwd = 3) 
-points(data.v4$longitude, data.v4$latitude, col=5, lwd = 3)
+
 
 
 
@@ -436,8 +363,8 @@ quilt.plot(data.v$longitude, data.v$latitude, lm(log(median_house_value) ~ total
                                                    longitude+latitude,  data = data.v)$residuals - krig0,
            main= "overall") 
 US(add=T) 
-data.vv=rbind(data.v1, data.v2, data.v3, data.v4) 
-krig.vv=c(krig2.1, krig2.2, krig2.3, krig2.4) 
+data.vv=rbind(data.v1, data.v2, data.v3) 
+krig.vv=c(krig2.1, krig2.2, krig2.3) 
 quilt.plot(data.vv$longitude, data.vv$latitude, lm(log(median_house_value) ~ total_bedrooms+ 
                                                      median_income+housing_median_age + 
                                                      longitude+latitude,  data = data.vv)$residuals - krig.vv,
