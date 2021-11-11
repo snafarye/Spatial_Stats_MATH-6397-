@@ -212,6 +212,152 @@ Z = matrix(res_krig_data3, ncol = 1)
 B_estimate1 = solve(t(M) %*% (solve(S) %*% M) ) %*%  t(M)%*%solve(S) %*% Z
 print(round(B_estimate1,5))
 
+##---------- Kriging  ols exponentional--------------------------------------------------------- 
+
+### Kriging data 
+datak1=data.v[data.v$longitude > -122.204,] 
+datak2=data.v[data.v$longitude <= -122.204 & data.v$longitude >  -122.397,]
+datak3=data.v[data.v$longitude <=  -122.397 & data.v$longitude> -122.59,]
+
+#### Data 1
+res_krig_datak1 <- (lm(log(median_house_value) ~ total_bedrooms+ 
+                         median_income+housing_median_age + 
+                         longitude+latitude,  data = datak1))$residuals
+
+# locations for selected data and kriging data
+locc = cbind(data1$longitude, data1$latitude)
+locc_k = cbind(datak1$longitude, datak1$latitude)
+
+# distance
+D <- rdist(locc)                  # distance b/t the selected data
+d <- rdist(locc,  locc_k)         # distance b/t selected data and kriging data
+
+
+# modify code below  
+M = cbind(rep(1, dim(D)[1]), data1$total_bedrooms,data1$median_income,data1$housing_median_age,data1$longitude,data1$latitude) 
+m = t(cbind(rep(1,37), datak1$total_bedrooms,datak1$median_income,datak1$housing_median_age,datak1$longitude,datak1$latitude)) 
+
+Z = matrix(res_krig_data1, ncol = 1)       # data vector
+
+# -------------------------(my results)
+######## exponential OLS
+alpha = 0.0521 #sill
+beta  = 0.1048 #range
+delta = 0.0341 #nugget?
+
+S = alpha * exp(-D/beta)         # covariance matrix 
+diag(S) = diag(S)+delta          # add nugget 
+k = alpha*exp(-d/beta)
+lambda = (solve(S) - solve(S) %*% M %*% solve(t(M) %*% solve(S) %*% M) %*% t(M) %*% solve(S) ) %*% k + solve(S) %*% M %*% solve(t(M) %*% solve(S) %*% M) %*% m 
+dim(lambda)
+
+krig.exp.ols = t(lambda) %*% Z 
+dim(krig.exp.ols)
+
+
+plot(res_krig_datak1, krig.exp.ols)
+lines(res_krig_datak1,res_krig_datak1) #y=x line 
+
+mse1=mean((krig.exp.ols-res_krig_datak1)^2)
+mse1 #in log form
+mae1=mean(abs(krig.exp.ols-res_krig_datak1))
+mae1
+
+
+#### Data 2
+res_krig_datak2 <- (lm(log(median_house_value) ~ total_bedrooms+ 
+                         median_income+housing_median_age + 
+                         longitude+latitude,  data = datak2))$residuals
+
+# locations for selected data and kriging data
+locc = cbind(data2$longitude, data2$latitude)
+locc_k = cbind(datak2$longitude, datak2$latitude)
+
+# distance
+D <- rdist(locc)                  # distance b/t the selected data
+d <- rdist(locc,  locc_k)         # distance b/t selected data and kriging data
+
+
+# modify code below  
+M = cbind(rep(1, dim(D)[1]), data2$total_bedrooms,data2$median_income,data2$housing_median_age,data2$longitude,data2$latitude) 
+m = t(cbind(rep(1,33), datak2$total_bedrooms,datak2$median_income,datak2$housing_median_age,datak2$longitude,datak2$latitude)) 
+
+Z = matrix(res_krig_data2, ncol = 1)       # data vector
+
+# -------------------------(my results)
+
+alpha = 0.0738 #sill
+beta  = 0.0172 #range
+delta = 0.0349 #nugget?
+
+
+
+S = alpha * exp(-D/beta)         # covariance matrix 
+diag(S) = diag(S)+delta          # add nugget 
+k = alpha*exp(-d/beta)
+lambda = (solve(S) - solve(S) %*% M %*% solve(t(M) %*% solve(S) %*% M) %*% t(M) %*% solve(S) ) %*% k + solve(S) %*% M %*% solve(t(M) %*% solve(S) %*% M) %*% m 
+dim(lambda)
+
+krig.exp.ols = t(lambda) %*% Z 
+dim(krig.exp.ols)
+
+
+plot(res_krig_datak2, krig.exp.ols)
+lines(res_krig_datak2,res_krig_datak2) #y=x line 
+
+mse1=mean((krig.exp.ols-res_krig_datak2)^2)
+mse1 #in log form
+mae1=mean(abs(krig.exp.ols-res_krig_datak2))
+mae1
+
+
+
+#### Data 3
+res_krig_datak3 <- (lm(log(median_house_value) ~ total_bedrooms+ 
+                         median_income+housing_median_age + 
+                         longitude+latitude,  data = datak3))$residuals
+
+# locations for selected data and kriging data
+locc = cbind(data3$longitude, data3$latitude)
+locc_k = cbind(datak3$longitude, datak3$latitude)
+
+# distance
+D <- rdist(locc)                  # distance b/t the selected data
+d <- rdist(locc,  locc_k)         # distance b/t selected data and kriging data
+
+
+# modify code below  
+M = cbind(rep(1, dim(D)[1]), data3$total_bedrooms,data3$median_income,data3$housing_median_age,data3$longitude,data3$latitude) 
+m = t(cbind(rep(1,30), datak3$total_bedrooms,datak3$median_income,datak3$housing_median_age,datak3$longitude,datak3$latitude)) 
+
+Z = matrix(res_krig_data3, ncol = 1)       # data vector
+
+# -------------------------(my results)
+
+alpha = 0.0255 #sill
+beta  = 0.0145 #range
+delta = 0.0555 #nugget?
+
+
+
+S = alpha * exp(-D/beta)         # covariance matrix 
+diag(S) = diag(S)+delta          # add nugget 
+k = alpha*exp(-d/beta)
+lambda = (solve(S) - solve(S) %*% M %*% solve(t(M) %*% solve(S) %*% M) %*% t(M) %*% solve(S) ) %*% k + solve(S) %*% M %*% solve(t(M) %*% solve(S) %*% M) %*% m 
+dim(lambda)
+
+krig.exp.ols = t(lambda) %*% Z 
+dim(krig.exp.ols)
+
+
+plot(res_krig_datak3, krig.exp.ols)
+lines(res_krig_datak3,res_krig_datak3) #y=x line 
+
+mse1=mean((krig.exp.ols-res_krig_datak3)^2)
+mse1 #in log form
+mae1=mean(abs(krig.exp.ols-res_krig_datak3))
+mae1
+
 #------------------------------ WLS
 
 
@@ -226,3 +372,69 @@ fit.WLS2
 fit.WLS3=variofit(vario3, ini.cov.pars=c(0.08,0.05),
               cov.model = "exponential")
 fit.WLS3 
+
+
+###########beta estimates ##########################
+
+##data 1
+
+set.seed(222)
+zz=rnorm(dim(data1)[1], 0, 0.001) 
+data1$longitude=data1$longitude+zz 
+locc = cbind(data1$longitude, data1$latitude)
+
+D <- rdist(locc) # distance
+
+alpha = 0.0777 #sill
+beta  = 0.0259 #range
+delta = 0.0000 #nugget?
+
+M <- cbind(rep(1, dim(D)[1]), data1$total_bedrooms,data1$median_income,data1$housing_median_age,data1$longitude,data1$latitude) # design matrix
+S <- alpha*exp(-D/beta)                       # covareiance matrix 
+diag(S) = diag(S) + delta                     # nugget
+Z = matrix(res_krig_data1, ncol = 1)
+
+B_estimate1 = solve(t(M) %*% (solve(S) %*% M) ) %*%  t(M)%*%solve(S) %*% Z
+print(round(B_estimate1,5))
+
+##data 2
+
+set.seed(222)
+zz=rnorm(dim(data2)[1], 0, 0.001) 
+data2$longitude=data2$longitude+zz 
+locc = cbind(data2$longitude, data2$latitude)
+
+D <- rdist(locc) # distance
+
+alpha = 0.0860 #sill
+beta  = 0.0166  #range
+delta = 0.0242 #nugget?
+
+M <- cbind(rep(1, dim(D)[1]), data2$total_bedrooms,data2$median_income,data2$housing_median_age,data2$longitude,data2$latitude) # design matrix
+S <- alpha*exp(-D/beta)                       # covareiance matrix 
+diag(S) = diag(S) + delta                     # nugget
+Z = matrix(res_krig_data2, ncol = 1)
+
+B_estimate1 = solve(t(M) %*% (solve(S) %*% M) ) %*%  t(M)%*%solve(S) %*% Z
+print(round(B_estimate1,5))
+
+##data 3
+
+set.seed(222)
+zz=rnorm(dim(data3)[1], 0, 0.001) 
+data3$longitude=data3$longitude+zz 
+locc = cbind(data3$longitude, data3$latitude)
+
+D <- rdist(locc) # distance
+
+alpha = 0.0490 #sill
+beta  = 0.0001 #range
+delta = 0.0309 #nugget?
+
+M <- cbind(rep(1, dim(D)[1]), data3$total_bedrooms,data3$median_income,data3$housing_median_age,data3$longitude,data3$latitude) # design matrix
+S <- alpha*exp(-D/beta)                       # covareiance matrix 
+diag(S) = diag(S) + delta                     # nugget
+Z = matrix(res_krig_data3, ncol = 1)
+
+B_estimate1 = solve(t(M) %*% (solve(S) %*% M) ) %*%  t(M)%*%solve(S) %*% Z
+print(round(B_estimate1,5))
