@@ -291,6 +291,36 @@ fit3=variofit(vario3, ini.cov.pars=c(0.08,0.05),
               weights = 'equal',
               cov.model = "exponential")
 fit3 
+print(fit1;fit2;fit3)
+
+#------estimate paramerters-------------------------------------------------
+b_estimates = function(data, par){
+  n=dim(data)[1] 
+  alpha=par[1] 
+  beta=par[2] 
+  delta=par[3] 
+  M=cbind(rep(1,n), data$total_bedrooms,data$median_income,data$housing_median_age,data$longitude,data$latitude) 
+  zz=rnorm(dim(data)[1], 0, 0.001) 
+  data$longitudee=data$longitude+zz 
+  locc = cbind(data$longitudee, data$latitude)
+  
+  
+  D=rdist(locc) 
+  S=alpha*exp(-D/beta) 
+  diag(S)=diag(S)+delta 
+  
+  
+  b_estimates=solve(t(M) %*% (solve(S) %*% M) ) %*%  t(M)%*%solve(S) %*% matrix(lm(log(median_house_value) ~ total_bedrooms+ 
+                                                                                     median_income+housing_median_age + 
+                                                                                     longitude+latitude,  data = data)$residuals, ncol = 1)
+  
+  return((round(b_estimates,5)))
+  
+}
+
+b_estimates(data1, c(0.0521,0.1048, 0.0341 ))
+b_estimates(data2, c(0.0738  ,0.0172 , 0.0349 ))
+b_estimates(data3, c(0.0255  ,0.0145 , 0.0555 ))
 
 #------- kriging the local stay 
 
