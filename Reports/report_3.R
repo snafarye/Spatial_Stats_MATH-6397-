@@ -186,12 +186,19 @@ data3=data0[data0$longitude <=  -122.397 & data0$longitude> -122.59,]
 par(mfrow=c(1,1)) 
 quilt.plot(data0$longitude, data0$latitude, res0) 
 US(add=T) 
-abline(v= c( -122.204, -122.397),col="gray") # ablines at -99 and -97 longatude
+abline(v= c( -122.204, -122.397),col="gray") # ablines at -122.204, -122.397 longatude
 
 
-text(-122.5,  37.6, label=nrow(data1), col="black") 
-text(-122.3,  37.6, label=nrow(data2), col="black") 
-text(-122.1,  37.6, label=nrow(data3), col="black") 
+text( c(-122.5, -122.3, -122.15), 
+      c(37.6, 37.6, 37.6), 
+     label = c(nrow(data3), nrow(data2), nrow(data1) ), 
+               col = "black")
+
+text( c(-122.5, -122.3, -122.15), 
+      c(37.65, 37.65, 37.65), 
+      label = c("data3", "data2", "data1" ), 
+      col = "black")
+
 
 print(
   cat(" Number of cases within each subgroup:", '\n',
@@ -200,7 +207,6 @@ print(
       "data3 = ", nrow(data3) ,'\n'
   )
 )
-
 
 zz=rnorm(dim(sample_data)[1], 0,0.1) 
 sample_data$longitudee=sample_data$longitude+zz 
