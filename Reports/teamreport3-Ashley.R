@@ -25,6 +25,13 @@ nrow(sample_data)#check to see if sample dataset has 1500 rows
 sample_kriging_data = new_data[sample(setdiff(1:dim(new_data)[1], sample_data),100),] # 100 location for kriging
 nrow(sample_kriging_data)
 
+# linear regression model from report 1
+fit0 = lm(log(median_house_value) ~ total_bedrooms+ 
+            median_income+housing_median_age + 
+            longitude+latitude,  data = sample_data)
+summary(fit0)
+res0 = fit0$residuals
+
 ##-----------  local statinarity ----------------------------
 
 # quick renaming 
@@ -38,7 +45,7 @@ data2=data0[data0$longitude <= -122.204 & data0$longitude >  -122.397,]
 data3=data0[data0$longitude <=  -122.397 & data0$longitude> -122.59,]
 
 par(mfrow=c(1,1),mai=c(0.5,0.5,0.5)) 
-quilt.plot(data0$longitude, data0$latitude, y_res) 
+quilt.plot(data0$longitude, data0$latitude, res0) 
 US(add=T) 
 abline(v= c( -122.204, -122.397),col="gray") # ablines at -99 and -97 longatude
 
@@ -59,6 +66,7 @@ zz=rnorm(dim(sample_data)[1], 0,0.1)
 sample_data$longitudee=sample_data$longitude+zz 
 locc = cbind(sample_data$longitudee, sample_data$latitude)
 
+#---------------------OLS
 
 res_krig_data1 <- (lm(log(median_house_value) ~ total_bedrooms+ 
                         median_income+housing_median_age + 
@@ -138,3 +146,83 @@ fit3=variofit(vario3, ini.cov.pars=c(0.08,0.05),
               weights = 'equal',
               cov.model = "exponential")
 fit3 
+
+###########beta estimates ##########################
+
+##data 1
+
+set.seed(222)
+zz=rnorm(dim(data1)[1], 0, 0.001) 
+data1$longitude=data1$longitude+zz 
+locc = cbind(data1$longitude, data1$latitude)
+
+D <- rdist(locc) # distance
+
+alpha = 0.0521 #sill
+beta  = 0.1048 #range
+delta = 0.0341 #nugget?
+
+M <- cbind(rep(1, dim(D)[1]), data1$total_bedrooms,data1$median_income,data1$housing_median_age,data1$longitude,data1$latitude) # design matrix
+S <- alpha*exp(-D/beta)                       # covareiance matrix 
+diag(S) = diag(S) + delta                     # nugget
+Z = matrix(res_krig_data1, ncol = 1)
+
+B_estimate1 = solve(t(M) %*% (solve(S) %*% M) ) %*%  t(M)%*%solve(S) %*% Z
+print(round(B_estimate1,5))
+
+##data 2
+
+set.seed(222)
+zz=rnorm(dim(data2)[1], 0, 0.001) 
+data2$longitude=data2$longitude+zz 
+locc = cbind(data2$longitude, data2$latitude)
+
+D <- rdist(locc) # distance
+
+alpha = 0.0738 #sill
+beta  = 0.0172 #range
+delta = 0.0349 #nugget?
+
+M <- cbind(rep(1, dim(D)[1]), data2$total_bedrooms,data2$median_income,data2$housing_median_age,data2$longitude,data2$latitude) # design matrix
+S <- alpha*exp(-D/beta)                       # covareiance matrix 
+diag(S) = diag(S) + delta                     # nugget
+Z = matrix(res_krig_data2, ncol = 1)
+
+B_estimate1 = solve(t(M) %*% (solve(S) %*% M) ) %*%  t(M)%*%solve(S) %*% Z
+print(round(B_estimate1,5))
+
+##data 3
+
+set.seed(222)
+zz=rnorm(dim(data3)[1], 0, 0.001) 
+data3$longitude=data3$longitude+zz 
+locc = cbind(data3$longitude, data3$latitude)
+
+D <- rdist(locc) # distance
+
+alpha = 0.0255 #sill
+beta  = 0.0145 #range
+delta = 0.0555 #nugget?
+
+M <- cbind(rep(1, dim(D)[1]), data3$total_bedrooms,data3$median_income,data3$housing_median_age,data3$longitude,data3$latitude) # design matrix
+S <- alpha*exp(-D/beta)                       # covareiance matrix 
+diag(S) = diag(S) + delta                     # nugget
+Z = matrix(res_krig_data3, ncol = 1)
+
+B_estimate1 = solve(t(M) %*% (solve(S) %*% M) ) %*%  t(M)%*%solve(S) %*% Z
+print(round(B_estimate1,5))
+
+#------------------------------ WLS
+
+
+fit.WLS1=variofit(vario1, ini.cov.pars=c(0.08,0.02),
+              cov.model = "exponential")
+fit.WLS1
+
+fit.WLS2=variofit(vario2, ini.cov.pars=c(0.1,0.05),
+              cov.model = "exponential")
+fit.WLS2
+
+fit.WLS3=variofit(vario3, ini.cov.pars=c(0.08,0.05),
+              cov.model = "exponential")
+fit.WLS3 
