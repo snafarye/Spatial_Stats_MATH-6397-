@@ -92,6 +92,10 @@ slag=rdist.earth(cbind(data2$longitude, data2$latitude))
 #spatial distance in miles, off diag= pairwise distance 
 slag[1:5,1:5]
 
+
+
+
+
 #----need to create a variogram, we have non-constant mean so fit the model + residuals 
 ## linear regression
 fit=lm(log(data2$average_rate_per_night)~data2$bedrooms_count)
@@ -104,31 +108,33 @@ dd[1:5,1:5]
 
 
 ## temporal bin
+range(tlag)  # 0 , 65
 tbin = 0:12
 
 # %%%%  =========================   time 45min in lec nov 10th
 
 ## spatial bin
+range(slag) # 0, 696
 sbin=seq(0,100,,15)
-st.vario=array(NA, dim=c(length(tbin)-1, length(sbin)-1))
+
+st.vario = array(NA, dim=c(length(tbin)-1, length(sbin)-1))
+
 for(i in 2:length(tbin)){
   for(j in 2:length(sbin)){
     print(i)
     print(j)
     
-    temp=dd[slag>=sbin[j-1] & slag<sbin[j] & tlag>=tbin[i-1] & tlag<tbin[i]]
+    temp = dd[slag >= sbin[j-1] & slag < sbin[j] & tlag >= tbin[i-1] & tlag < tbin[i]]
     
-    a=mean(temp,na.rm=T)
+    a=mean(temp, na.rm = T)  # space/ time variogram value
     print(a)
     
-    st.vario[i-1,j-1]=a
+    st.vario[i-1,j-1] = a
   }
 }
 # time bin, spatial bin, space/time variogram value 
 st.vario[1:5,1:5]
 # space time values for computation of spatial lag and time lag 
-
-
 
 
 # image plot of values above 
@@ -142,9 +148,9 @@ image.plot(tbin[1:12],
            ylab="spatial lag (mile)",
            col=col)
 
-plot(tbin[1:12], st.vario[,1]) # sill = 0.65, range = 1(1month) 
-plot(sbin[1:14], st.vario[1,]) # sill = 0.90, range = 30(30miles)
-
+plot(tbin[1:12], st.vario[,1]) # sill = 0.90,  range = 1(1month)  , nugget 0.5
+plot(sbin[1:14], st.vario[1,]) # sill = 1.20,  range = 30(30miles), nugget 0.5 
+# sign of sig spatial dependence 
 
 #
 plot(sbin[1:14], seq(0, 1.2,,14), 
