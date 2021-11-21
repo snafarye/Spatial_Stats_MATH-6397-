@@ -167,5 +167,39 @@ plot(sbin[1:length(sbin)-1], st.vario[1,]) #
 
 
 
+#
+plot(sbin[1:length(sbin)-1], seq(0, 1.2,,15), 
+     type="n", 
+     xlab="spatial lag",
+     ylab="variogram")
+col1=brewer.pal(12, "Paired")
+for(i in 1:12){
+  points(sbin[1:length(sbin)-1],
+         st.vario[i,],
+         col=col1[i],pch=20)
+}
+
+# spatial variogram , diff color = diff temporal lag 
+
+
+
+
+#
+plot(tbin[1:length(tbin)-1], 
+     seq(0, 1.2,, 12), 
+     type="n", 
+     xlab="temporal lag",
+     ylab="variogram")
+col1=brewer.pal(12, "Paired")
+for(i in 1:12){
+  points(tbin[1:length(tbin)-1],
+         st.vario[,i],
+         col=col1[i],
+         pch=20)
+}
+# temporal variogram , diff color = diff spatial lag 
+# temporal dependence is weak (compared to spatial dependence )
+
+
 
 
