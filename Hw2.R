@@ -74,6 +74,7 @@ dim(loc1) # 4380 = 12*365
 # spatrial loc distances 
 slag=rdist.earth(loc1, miles=FALSE) ## spatial distance (large)
 tlag=rdist(time) ## temporal distance (large)
+
 dim(slag);dim(tlag)
 
 
@@ -102,29 +103,23 @@ dim(slag);dim(tlag)
 # need for the covariance structure, z1 is mean zero 
 z=matrix(wind1, ncol=1, byrow=FALSE)
 z1=z-mean(z)
-dd <- rdist(z1)
-dim(dd)
 
+dz <- rdist(z)
+dim(dz)
 
-
-
-
+# dd <- rdist(z1)
+# dim(dd)
 ## temporal bin
 range(tlag)  # 0 , 364
 tbin = 0:12
 #seq(0,200,,14)
-
 # %%%%  =========================   time 45min in lec nov 10th
-
 ## spatial bin
 range(slag) # 0, 427.8
-sbin=seq(0,200,,16)
-
+sbin=seq(0, 300,, 15)
 
 dim(tlag); length(tbin);dim(slag);length(sbin)
 dim(dd)
-
-
 
 st.vario = array(NA, dim=c(length(tbin)-1, length(sbin)-1))
 dim(st.vario)
@@ -134,7 +129,7 @@ for(i in 2:length(tbin)){
     print(i)
     print(j)
     
-    temp = dd[slag>=sbin[j-1] & slag<sbin[j] & tlag>=tbin[i-1] & tlag<tbin[i]]
+    temp = dz[slag>=sbin[j-1] & slag<sbin[j] & tlag>=tbin[i-1] & tlag<tbin[i]]
     
     a=mean(temp, na.rm = T)  # space/ time variogram value
     print(a)
@@ -143,7 +138,7 @@ for(i in 2:length(tbin)){
   }
 }
 # time bin, spatial bin, space/time variogram value 
-st.vario[1:5,1:5]
+st.vario
 # space time values for computation of spatial lag and time lag 
 
 
@@ -151,7 +146,7 @@ st.vario[1:5,1:5]
 
 # image plot of values above 
 library(RColorBrewer)
-
+par(mfrow=c(1,1))
 col=brewer.pal(9, "Blues")
 image.plot(tbin[1:length(tbin)], 
            sbin[1:length(sbin)],
@@ -161,14 +156,33 @@ image.plot(tbin[1:length(tbin)],
            col=col)
 
 
-plot(tbin[1:length(tbin)-1], st.vario[,1]) # 
-plot(sbin[1:length(sbin)-1], st.vario[1,]) #
+par(mfrow=c(1,2))
+plot(sbin[1:length(sbin)-1], st.vario[1,], 
+     xlab = "sbin 1:14", main = "st.vario, sbin") ## sill = 4,  range = 80(80miles), nugget 1 
+lines.variomodel(cov.model = "exp", 
+                 cov.pars = c(3.5,40), 
+                 nugget = 0.05, 
+                 max.dist = 300,
+                 lwd = 3)
+legend("bottomright",
+       legend=c("alpha = 3.5", "beta = 40 miles", "nugget = 0.05"), cex=1)
+
+
+plot(tbin[1:length(tbin)-1], st.vario[,1], 
+     xlab = "tbin 1:12", main = "st.vario, tbin") ## sill = 5,  range = 3 (3 months), nugget 1  
 # sign of sig spatial dependence ????????
+lines.variomodel(cov.model = "exp", 
+                 cov.pars = c(5,1), 
+                 nugget = 0.05, 
+                 max.dist = 12,
+                 lwd = 3)
+legend("bottomright",
+       legend=c("alpha = 5", "beta = 1 month", "nugget = 0.05"), cex=1)
 
 
 
-#
-plot(sbin[1:length(sbin)-1], seq(0, 1.2,,15), 
+
+plot(sbin[1:length(sbin)-1], seq(0, 7,,14), 
      type="n", 
      xlab="spatial lag",
      ylab="variogram")
@@ -182,24 +196,34 @@ for(i in 1:12){
 # spatial variogram , diff color = diff temporal lag 
 
 
-
+#
+# plot(sbin[1:14], seq(0, 7,,14), 
+#      type="n", 
+#      xlab="spatial lag",
+#      ylab="variogram")
+# 
+# for(i in 1:9){
+#   points(sbin[1:14],
+#          st.vario[i,],
+#          col=col[9-i+1],
+#          pch=20)
+# }
+# 
 
 #
-plot(tbin[1:length(tbin)-1], 
-     seq(0, 1.2,, 12), 
+plot(tbin[1:length(tbin)-1], seq(0, 6.5,,12), 
      type="n", 
      xlab="temporal lag",
      ylab="variogram")
 col1=brewer.pal(12, "Paired")
 for(i in 1:12){
-  points(tbin[1:length(tbin)-1],
+  points(tbin[1:12],
          st.vario[,i],
          col=col1[i],
          pch=20)
 }
 # temporal variogram , diff color = diff spatial lag 
 # temporal dependence is weak (compared to spatial dependence )
-
 
 
 
