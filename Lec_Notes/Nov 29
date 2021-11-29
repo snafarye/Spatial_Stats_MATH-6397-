@@ -1,0 +1,45 @@
+
+#### Nov 29, 2021 ####
+ 
+ 
+set.seed(100)
+ 
+## block kriging
+ 
+library(gstat)
+ 
+library(sp)
+data(meuse)
+coordinates(meuse) = ~x+y
+data(meuse.grid)
+gridded(meuse.grid) = ~x+y
+ 
+library(fields)
+ 
+quilt.plot(coordinates(meuse), log(meuse$zinc))
+ 
+m <- vgm(.59, "Sph", 874, .04)
+ 
+# ordinary kriging:
+x <- krige(log(zinc)~1, meuse, meuse.grid, model = m)
+ 
+ 
+spplot(x["var1.pred"], main = "ordinary kriging predictions")
+spplot(x["var1.var"],  main = "ordinary kriging variance")
+ 
+# simple kriging:
+x <- krige(log(zinc)~1, meuse, meuse.grid, model = m, beta = 5.9)
+ 
+spplot(x["var1.pred"], main = "ordinary kriging predictions")
+spplot(x["var1.var"],  main = "ordinary kriging variance")
+ 
+# residual variogram:
+m <- vgm(.4, "Sph", 954, .06)
+# universal block kriging:
+x <- krige(log(zinc)~x+y, meuse, meuse.grid, model = m, block = c(40,40))
+spplot(x["var1.pred"], main = "universal kriging predictions")
+spplot(x["var1.var"],  main = "kriging variance")
+ 
+x <- krige(log(zinc)~x+y, meuse, meuse.grid, model = m, block = c(4000,4000))
+spplot(x["var1.pred"], main = "kriging predictions")
+spplot(x["var1.var"],  main = "kriging variance")
