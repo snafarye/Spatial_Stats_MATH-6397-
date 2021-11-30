@@ -1,5 +1,5 @@
-getwd()
 load('~/Grad_School/MATH 6397/FinalReview.RData')
+
 library(fields)
 library(geoR)
 library(gstat)
@@ -32,9 +32,9 @@ world(add=T)
 
 vario0  = variog(coords=loc,
                  data=z1,
-                 trend = "2nd"
+                 trend = "1st"
                  ,max.dist = 3  # can set a diff max distance 
-                 ) 
+) 
 plot(vario0, main = "Emperical Variogram")
 
 alpha  = 6
@@ -50,8 +50,8 @@ lines.variomodel(cov.model = "exp",
 
 # exponential covariance parameters 
 fit.expo.OLS = variofit(vario0, ini.cov.pars=c(alpha,beta),
-                      weights = 'equal',
-                      cov.model = "exponential")
+                        weights = 'equal',
+                        cov.model = "exponential")
 fit.expo.OLS
 
 
@@ -73,8 +73,8 @@ lines.variomodel(cov.model = "gaussian",
 
 # Gaussian covariance parameters 
 fit.gaussian.OLS = variofit(vario0, ini.cov.pars=c(alpha.g,beta.g),
-                        weights = 'equal',
-                        cov.model = "gaussian")
+                            weights = 'equal',
+                            cov.model = "gaussian")
 fit.gaussian.OLS
 
 
@@ -84,11 +84,11 @@ fit.gaussian.OLS
 # Part1: expo cov function, OLS
 
 fit.exp.reml = likfit(coords=loc, 
-                    data=z1,
-                    lik.method = "REML", 
-                    trend = "2nd",
-                    cov.model = "exponential",
-                    ini.cov.pars= c(alpha,beta)) 
+                      data=z1,
+                      lik.method = "REML", 
+                      trend = "1st",
+                      cov.model = "exponential",
+                      ini.cov.pars= c(alpha,beta)) 
 fit.exp.reml
 
 
@@ -96,11 +96,11 @@ fit.exp.reml
 
 
 fit.gaussian.reml = likfit(coords=loc, 
-                      data=z1,
-                      lik.method = "REML", 
-                      trend = "2nd",
-                      cov.model = "gaussian",
-                      ini.cov.pars= c(alpha.g,beta.g)) 
+                           data=z1,
+                           lik.method = "REML", 
+                           trend = "1st",
+                           cov.model = "gaussian",
+                           ini.cov.pars= c(alpha.g,beta.g)) 
 fit.gaussian.reml
 
 
@@ -127,10 +127,10 @@ par(mfrow=c(1,1))
 
 
 print(list(fit.expo.OLS,
-             fit.gaussian.OLS,
-             fit.exp.reml,
-             fit.gaussian.reml)
-      )
+           fit.gaussian.OLS,
+           fit.exp.reml,
+           fit.gaussian.reml)
+)
 
 
 
@@ -139,33 +139,126 @@ print(list(fit.expo.OLS,
 #                        Local stationary model
 
 {
-data = as.data.frame(cbind(x1,y1,z1,w1))
-data1 = data[data$y1 >  1,] 
-data2 = data[data$y1 <= 1,] 
-loc   = cbind(x1,y1)
-quilt.plot(loc, z1, xlim=c(-1,11), ylim=c(-1,3.5))
-world(add=T)
-points(loc_k, col="black", lwd = 3)  # add in where the kriged points are located
-abline(h = 1, col="gray") # ablines at 1 latitude
-text(c(0,0),
-     c(3,-0.5),
-     label= c(nrow(data1), nrow(data2)), 
-     col="black") 
-
-text( c(0,0),
-      c(3.25,-.25),
-      label = c("data1", "data2" ), 
-      col = "black")
+  data = as.data.frame(cbind(x1,y1,z1,w1))
+  data1 = data[data$y1 >  1,] 
+  data2 = data[data$y1 <= 1,] 
+  loc   = cbind(x1,y1)
+  quilt.plot(loc, z1, xlim=c(-1,11), ylim=c(-1,3.5))
+  world(add=T)
+  points(loc_k, col="black", lwd = 3)  # add in where the kriged points are located
+  abline(h = 1, col="gray") # ablines at 1 latitude
+  text(c(0,0),
+       c(3,-0.5),
+       label= c(nrow(data1), nrow(data2)), 
+       col="black") 
+  
+  text( c(0,0),
+        c(3.25,-.25),
+        col = "black",
+     label = c("data1", "data2" )
+     ) 
 }
 
 
 {
-vario1=variog(coords=cbind(data1$x1, data1$y1), data=log(data1$z1), trend="2nd",max.dist=10) 
-vario2=variog(coords=cbind(data2$x1, data2$y1), data=log(data2$z1), trend="2nd",max.dist=10) 
-par(mfrow=c(1,2)) 
-plot(vario1,ylim=c(0,0.10),main = "Data1") 
-plot(vario2,ylim=c(0,0.10), main= "Data2") 
+  vario1=variog(coords=cbind(data1$x1, data1$y1), data=data1$z1, trend = "1st",max.dist=10) 
+  vario2=variog(coords=cbind(data2$x1, data2$y1), data=data2$z1, trend = "1st",max.dist=10) 
+  par(mfrow=c(1,2)) 
+  plot(vario1, main = "Data1") 
+  plot(vario2, main = "Data2")
+  par(mfrow=c(1,1)) 
 }
+# need to adjust the distance max and  ylim=c(a,b) limits
+
+
+
+#--------------------------------------------------------------------
+#--------------------------------------------------------------------
+#                   Non-stationary modeling with REML
+
+
+# Data 1 where y >1, expo REML model
+
+
+vario1=variog(coords=cbind(data1$x1, data1$y1), 
+              data=data1$z1, 
+              trend = "1st", 
+              max.dist = 5) 
+plot(vario1, main = "Data1 Variogram, y > 1") 
+lines.variomodel(coords=cbind(data1$x1, data1$y1),
+                 cov.model = "exponential",
+                 cov.pars = c(4,0.50),
+                 nugget = 3 ,
+                 max.dist = 5,
+                 lwd = 3)
+#
+# not getting a good reml for the expo model
+fit.local1.exp.reml = likfit(coords=cbind(data1$x1, data1$y1), 
+                      data=data1$z1,
+                      lik.method = "REML", 
+                      trend = "1st",
+                      cov.model = "exponential",
+                      ini.cov.pars=  c(4,0.50)) 
+fit.local1.exp.reml
+
+
+plot(vario1, main = "EXPO Data1, y > 1 REML")
+lines(fit.local1.exp.reml,      lwd = 2, col= "blue")
+legend("bottomright", legend=c("expo.REML for data 1"),
+       lwd=c(2,2,2),col = c("blue"), cex=0.7)
+
+
+#---------------------------------------------------------------------
+##                   gaussian  REML
+
+vario2=variog(coords=cbind(data2$x1, data2$y1), 
+              data=data2$z1, 
+              trend = "1st", 
+              max.dist = 6) 
+plot(vario2, main = "Data2 Variogram, y <= 1") 
+lines.variomodel(coords=cbind(data2$x1, data2$y1),
+                 cov.model = "gaussian",
+                 cov.pars = c(4,0.50),
+                 nugget = 4 ,
+                 max.dist = 6,
+                 lwd = 3)
+
+fit.local2.gaussian.reml = likfit(coords=cbind(data2$x1, data2$y1), 
+                           data=data2$z1,
+                           lik.method = "REML", 
+                           trend = "1st",
+                           cov.model = "gaussian",
+                           ini.cov.pars= c(4,0.50)) 
+fit.local2.gaussian.reml
+
+
+plot(vario2, main = "Gaussian Data2, y <= 1 REML")
+lines.variomodel(coords=cbind(data2$x1, data2$y1),
+                 cov.model = "gaussian",
+                 cov.pars = c(4,0.50),
+                 nugget = 4 ,
+                 max.dist = 6,
+                 lwd = 3)
+lines(fit.local2.gaussian.reml,      lwd = 2, col= "red")
+legend("bottomright", legend=c("guassian.REML for data 1", "predition"),
+       lwd=c(2,2,2),col = c("red", "black"), cex=0.7)
+
+
+
+#--------------------------------------------------------------------
+#--------------------------------------------------------------------
+#       Comparison regarding kriging accuracy 
+
+
+
+
+
+
+
+
+
+
+
 
 
 
